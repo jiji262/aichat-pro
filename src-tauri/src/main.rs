@@ -566,14 +566,33 @@ async fn send_chat_request(
         guard.clone()
     };
     
+    // Determine provider type using the same logic as fetch_models_from_provider
+    let provider_type = determine_provider_type(&request.provider_id, &api_url, &provider_name);
+
     // Call appropriate API based on provider type
-    let provider_name_lower = provider_name.to_lowercase();
-    if provider_name_lower.contains("openai") {
-        ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
-    } else if provider_name_lower.contains("gemini") {
-        ai_client.gemini_chat(&api_url, &api_key, &model_name, messages).await
-    } else {
-        Err(ai::AIError::APIError(format!("Unsupported provider: {}", provider_name)).into())
+    match provider_type.as_str() {
+        "openai" => {
+            ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
+        },
+        "deepseek" => {
+            // DeepSeek uses OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
+        },
+        "grok" => {
+            // Grok uses OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
+        },
+        "gemini" => {
+            ai_client.gemini_chat(&api_url, &api_key, &model_name, messages).await
+        },
+        "custom" => {
+            // For custom providers, default to OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
+        },
+        _ => {
+            // Default to OpenAI-compatible API for unknown types
+            ai_client.openai_chat(&api_url, &api_key, &model_name, messages).await
+        }
     }.map_err(|e| e.to_string())
 }
 

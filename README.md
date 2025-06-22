@@ -92,6 +92,15 @@
 ### 🤖 Multiple AI Provider Support
 AIChat Pro seamlessly integrates with various AI providers, allowing you to switch between different models and compare responses. Each provider can be configured with custom API endpoints and authentication.
 
+**Fully Supported Providers:**
+- ✅ **OpenAI** - GPT-4, GPT-3.5 Turbo, and all OpenAI models
+- ✅ **DeepSeek** - DeepSeek-V2, DeepSeek-Coder (OpenAI-compatible API)
+- ✅ **Grok (X.AI)** - Grok models (OpenAI-compatible API)
+- ✅ **Custom Providers** - Any OpenAI-compatible API endpoint
+
+**Partially Supported:**
+- 🟡 **Google Gemini** - Gemini Pro, Flash (native API, limited model discovery)
+
 ### 🎨 Modern & Intuitive Interface
 The application features a clean, modern design with support for both dark and light themes. The interface is designed to be intuitive and user-friendly, making AI interactions effortless.
 
@@ -213,7 +222,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/jiji262/aichat-pro/discussions)
 
 ---
-
-<div align="center">
-Made with ❤️ by the AIChat Pro Team
-</div>

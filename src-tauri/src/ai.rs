@@ -218,10 +218,10 @@ impl AIClient {
     
     // Send a chat request to Gemini
     pub async fn gemini_chat(
-        &self, 
-        api_url: &str, 
-        api_key: &str, 
-        model: &str, 
+        &self,
+        api_url: &str,
+        api_key: &str,
+        model: &str,
         messages: Vec<ChatMessage>
     ) -> Result<AIResponse, AIError> {
         // Convert messages to Gemini format
@@ -232,34 +232,34 @@ impl AIClient {
                 "assistant" => "model",
                 _ => continue, // Skip system messages for now
             };
-            
+
             contents.push(gemini::Content {
                 role: role.to_string(),
                 parts: vec![gemini::Part { text: message.content }],
             });
         }
-        
+
         // Construct the request
         let request = gemini::ChatRequest {
             contents,
         };
-        
+
         // Send the request
         let response = self.http_client
             .post(format!("{}/v1beta/models/{}/generateContent?key={}", api_url, model, api_key))
             .json(&request)
             .send()
             .await?;
-            
+
         // Check for errors
         if !response.status().is_success() {
             let error_text = response.text().await?;
             return Err(AIError::APIError(error_text));
         }
-        
+
         // Parse the response
         let gemini_response: gemini::ChatResponse = response.json().await?;
-        
+
         if let Some(candidate) = gemini_response.candidates.first() {
             if let Some(part) = candidate.content.parts.first() {
                 Ok(AIResponse {
@@ -272,5 +272,20 @@ impl AIClient {
         } else {
             Err(AIError::APIError("No candidates in response".to_string()))
         }
+    }
+
+    // Fetch models from Gemini (placeholder for future implementation)
+    pub async fn fetch_gemini_models(
+        &self,
+        _api_url: &str,
+        _api_key: &str
+    ) -> Result<Vec<String>, AIError> {
+        // TODO: Implement actual Gemini models API call
+        // For now, return common Gemini models
+        Ok(vec![
+            "gemini-1.5-pro".to_string(),
+            "gemini-1.5-flash".to_string(),
+            "gemini-1.0-pro".to_string(),
+        ])
     }
 } 
