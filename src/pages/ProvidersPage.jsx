@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
 
@@ -23,11 +23,22 @@ export default function ProvidersPage() {
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, provider: null });
   const [addModelDialog, setAddModelDialog] = useState({ show: false, providerId: null, modelName: "" });
   const [deleteModelConfirm, setDeleteModelConfirm] = useState({ show: false, model: null, providerId: null });
+  const [verificationStatus, setVerificationStatus] = useState({});
   
+  const scrollableContainerRef = useRef(null);
+  const [scrollPosition, setScrollPosition] = useState(null);
+
   // Load providers
   useEffect(() => {
     loadProviders();
   }, []);
+  
+  useEffect(() => {
+    if (scrollPosition !== null && scrollableContainerRef.current) {
+      scrollableContainerRef.current.scrollTop = scrollPosition;
+      setScrollPosition(null); // Reset after restoring
+    }
+  }, [providers, scrollPosition]);
   
   async function loadProviders() {
     try {
@@ -109,6 +120,9 @@ export default function ProvidersPage() {
       case "openai":
         setFormApiUrl("https://api.openai.com");
         break;
+      case "claude":
+        setFormApiUrl("https://api.anthropic.com");
+        break;
       case "gemini":
         setFormApiUrl("https://generativelanguage.googleapis.com");
         break;
@@ -130,6 +144,10 @@ export default function ProvidersPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     
+    if (scrollableContainerRef.current) {
+      setScrollPosition(scrollableContainerRef.current.scrollTop);
+    }
+
     if (!formName || !formApiUrl) return;
     
     try {
@@ -148,10 +166,7 @@ export default function ProvidersPage() {
         }
       });
       
-      // Reload providers
       await loadProviders();
-      
-      // Reset form
       cancelForm();
     } catch (error) {
       console.error("Failed to save provider:", error);
@@ -162,6 +177,10 @@ export default function ProvidersPage() {
   async function handleUpdateProvider(providerId) {
     const form = editForms[providerId];
     if (!form || !form.name || !form.apiUrl) return;
+
+    if (scrollableContainerRef.current) {
+      setScrollPosition(scrollableContainerRef.current.scrollTop);
+    }
     
     try {
       await invoke("update_provider", {
@@ -173,10 +192,7 @@ export default function ProvidersPage() {
         }
       });
       
-      // Reload providers
       await loadProviders();
-      
-      // Exit edit mode
       setEditingProviderId(null);
     } catch (error) {
       console.error("Failed to update provider:", error);
@@ -187,6 +203,10 @@ export default function ProvidersPage() {
   const confirmDelete = async () => {
     const provider = deleteConfirm.provider;
     if (!provider) return;
+
+    if (scrollableContainerRef.current) {
+      setScrollPosition(scrollableContainerRef.current.scrollTop);
+    }
 
     console.log("=== CONFIRMING DELETE ===");
     console.log("Provider ID:", provider.id);
@@ -349,11 +369,49 @@ export default function ProvidersPage() {
     }
   }
   
+  async function handleVerifyModel(providerId, model) {
+    setVerificationStatus(prev => ({
+      ...prev,
+      [model.id]: { status: 'verifying' }
+    }));
+
+    try {
+      const result = await invoke("verify_model", {
+        request: {
+          provider_id: providerId,
+          model_name: model.name,
+        }
+      });
+
+      // Check the actual result from the backend
+      if (result === true) {
+        setVerificationStatus(prev => ({
+          ...prev,
+          [model.id]: { status: 'verified' }
+        }));
+      } else {
+        setVerificationStatus(prev => ({
+          ...prev,
+          [model.id]: { status: 'failed', message: 'Model verification failed' }
+        }));
+      }
+    } catch (error) {
+      console.error(`Failed to verify model ${model.name}:`, error);
+      setVerificationStatus(prev => ({
+        ...prev,
+        [model.id]: { status: 'error', message: error }
+      }));
+    }
+  }
+  
   function renderProviderCard(provider) {
     const models = modelsMap[provider.id] || [];
     const isLoading = loadingModels[provider.id] || false;
     const isEditing = editingProviderId === provider.id;
     const editForm = editForms[provider.id] || { name: "", apiUrl: "", apiKey: "" };
+    
+    const providerType = determine_provider_type(provider.id, provider.api_url, provider.name);
+    const supportsModelFetching = providerType !== 'claude'; // Claude does not support fetching
     
     return (
       <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
@@ -452,8 +510,9 @@ export default function ProvidersPage() {
           <div className="space-x-2">
             <button
               onClick={() => fetchModelsFromProvider(provider.id)}
-              className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800"
-              disabled={isLoading || !provider.api_key}
+              className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+              disabled={isLoading || !provider.api_key || !supportsModelFetching}
+              title={!supportsModelFetching ? t('providers.manualAddModelTooltip') : ''}
             >
               {isLoading ? t('common.loading') : t('providers.fetchModels')}
             </button>
@@ -483,8 +542,9 @@ export default function ProvidersPage() {
               </button>
               <button
                 onClick={() => fetchModelsFromProvider(provider.id)}
-                className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800"
-                disabled={isLoading || !provider.api_key}
+                className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                disabled={isLoading || !provider.api_key || !supportsModelFetching}
+                title={!supportsModelFetching ? t('providers.manualAddModelTooltip') : ''}
               >
                 {t('providers.fetchModels')}
               </button>
@@ -492,194 +552,254 @@ export default function ProvidersPage() {
           </div>
         ) : (
           <ul className="space-y-1 mt-2">
-            {models.map((model) => (
-              <li key={model.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded">
-                <span>{model.name}</span>
-                <button
-                  onClick={() => showDeleteModelDialog(model, provider.id)}
-                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                </button>
-              </li>
-            ))}
+            {models.map((model) => {
+              const status = verificationStatus[model.id] || {};
+              return (
+                <li key={model.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded">
+                  <span className="truncate pr-4">{model.name}</span>
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    {status.status === 'verifying' && (
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent" title="Verifying..."></div>
+                    )}
+                    {status.status === 'verified' && (
+                      <span title="Verified successfully!" className="text-green-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                    )}
+                    {(status.status === 'error' || status.status === 'failed') && (
+                      <span title={`Verification failed: ${status.message || 'Unknown error'}`} className="text-red-500 cursor-help">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                    )}
+                    
+                    <button
+                      onClick={() => handleVerifyModel(provider.id, model)}
+                      className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50"
+                      disabled={status.status === 'verifying'}
+                    >
+                      Verify
+                    </button>
+
+                    <button
+                      onClick={() => showDeleteModelDialog(model, provider.id)}
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded-full"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
     );
   }
   
+  // Helper function to determine provider type on the frontend
+  function determine_provider_type(provider_id, api_url, provider_name) {
+    if (provider_id.startsWith("claude")) return "claude";
+    if (provider_id.startsWith("openai")) return "openai";
+    if (provider_id.startsWith("gemini")) return "gemini";
+    if (provider_id.startsWith("deepseek")) return "deepseek";
+    if (provider_id.startsWith("grok")) return "grok";
+    if (api_url.includes("anthropic.com")) return "claude";
+    if ((provider_name || "").toLowerCase().includes("claude")) return "claude";
+    return "custom";
+  }
+  
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{t('providers.title')}</h1>
-        <button
-          onClick={openAddForm}
-          className="btn btn-primary flex items-center justify-center min-w-[120px]"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          {t('providers.addProvider')}
-        </button>
-      </div>
-      
-      {/* Add/Edit Form */}
-      {showAddForm && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">
-            {t('providers.addProvider')}
-          </h2>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('providers.providerType')}
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("openai")}
-                  className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                    formType === "openai"
-                      ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300"
-                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  OpenAI
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("gemini")}
-                  className={`px-3 py-2 text-sm rounded-md border ${
-                    formType === "gemini" 
-                      ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
-                      : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                  }`}
-                >
-                  Gemini
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("deepseek")}
-                  className={`px-3 py-2 text-sm rounded-md border ${
-                    formType === "deepseek" 
-                      ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
-                      : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                  }`}
-                >
-                  DeepSeek
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("grok")}
-                  className={`px-3 py-2 text-sm rounded-md border ${
-                    formType === "grok" 
-                      ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
-                      : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                  }`}
-                >
-                  Grok
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("custom")}
-                  className={`px-3 py-2 text-sm rounded-md border ${
-                    formType === "custom" 
-                      ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
-                      : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                  }`}
-                >
-                  Custom
-                </button>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('common.name')}
-              </label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder={`e.g., My ${formType === "custom" ? "Custom" : formType.charAt(0).toUpperCase() + formType.slice(1)} Provider`}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('providers.apiUrl')}
-              </label>
-              <input
-                type="url"
-                value={formApiUrl}
-                onChange={(e) => setFormApiUrl(e.target.value)}
-                placeholder="e.g., https://api.example.com"
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('providers.apiKey')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                value={formApiKey}
-                onChange={(e) => setFormApiKey(e.target.value)}
-                placeholder="Enter API key"
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={cancelForm}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary flex items-center justify-center min-w-[120px]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                {t('providers.addProvider')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-      
-      {/* Providers List */}
-      {isLoading ? (
-        <div className="text-center py-4">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
-        </div>
-      ) : providers.length === 0 ? (
-        <div className="text-center p-8">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('providers.noProviders')}</p>
+    <div className="flex flex-col h-screen">
+      {/* 固定顶部标题栏 */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 p-6 shadow-md">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">{t('providers.title')}</h1>
           <button
             onClick={openAddForm}
-            className="btn btn-primary"
+            className="btn btn-primary flex items-center justify-center min-w-[120px]"
           >
-            {t('providers.addFirstProvider')}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            {t('providers.addProvider')}
           </button>
         </div>
-      ) : (
-        <div>
-          {providers.map(renderProviderCard)}
-        </div>
-      )}
+      </div>
+      
+      {/* 可滚动内容区域 */}
+      <div ref={scrollableContainerRef} className="flex-1 overflow-y-auto p-6 pt-2">
+        {/* Add/Edit Form */}
+        {showAddForm && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              {t('providers.addProvider')}
+            </h2>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('providers.providerType')}
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("openai")}
+                    className={`px-3 py-2 text-sm rounded-md border transition-colors ${
+                      formType === "openai"
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300"
+                        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    OpenAI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("claude")}
+                    className={`px-3 py-2 text-sm rounded-md border ${
+                      formType === "claude" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
+                        : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    Claude
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("gemini")}
+                    className={`px-3 py-2 text-sm rounded-md border ${
+                      formType === "gemini" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
+                        : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    Gemini
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("deepseek")}
+                    className={`px-3 py-2 text-sm rounded-md border ${
+                      formType === "deepseek" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
+                        : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    DeepSeek
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("grok")}
+                    className={`px-3 py-2 text-sm rounded-md border ${
+                      formType === "grok" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
+                        : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    Grok
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange("custom")}
+                    className={`px-3 py-2 text-sm rounded-md border ${
+                      formType === "custom" 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300" 
+                        : "bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('common.name')}
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder={`e.g., My ${formType === "custom" ? "Custom" : formType.charAt(0).toUpperCase() + formType.slice(1)} Provider`}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('providers.apiUrl')}
+                </label>
+                <input
+                  type="url"
+                  value={formApiUrl}
+                  onChange={(e) => setFormApiUrl(e.target.value)}
+                  placeholder="e.g., https://api.example.com"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('providers.apiKey')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={formApiKey}
+                  onChange={(e) => setFormApiKey(e.target.value)}
+                  placeholder="Enter API key"
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={cancelForm}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary flex items-center justify-center min-w-[120px]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {t('providers.addProvider')}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        
+        {/* Providers List */}
+        {isLoading && providers.length === 0 ? (
+          <div className="text-center py-4">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
+          </div>
+        ) : providers.length === 0 ? (
+          <div className="text-center p-8">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('providers.noProviders')}</p>
+            <button
+              onClick={openAddForm}
+              className="btn btn-primary"
+            >
+              {t('providers.addFirstProvider')}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {providers.map(renderProviderCard)}
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm.show && (

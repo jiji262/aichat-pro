@@ -94,6 +94,12 @@ struct ChatRequest {
     messages: Vec<ai::ChatMessage>,
 }
 
+#[derive(Deserialize)]
+struct VerifyModelRequest {
+    provider_id: String,
+    model_name: String,
+}
+
 // Get the application data directory
 fn get_app_data_dir() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not find home directory".to_string())?;
@@ -596,6 +602,82 @@ async fn send_chat_request(
     }.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn verify_model(
+    app_state: State<'_, AppState>,
+    request: VerifyModelRequest,
+) -> Result<bool, String> {
+    // Get provider information
+    let provider = {
+        let conn = app_state.db_conn.lock().unwrap();
+        db::get_provider_by_id(&conn, &request.provider_id)
+            .map_err(|e| e.to_string())?
+            .ok_or("Provider not found")?
+    };
+
+    // Check if API key is available
+    let api_key = provider.api_key.as_ref().ok_or("API key not found for provider")?;
+
+    // Clone necessary data before async operations
+    let api_url = provider.api_url.clone();
+    let api_key = api_key.clone();
+    let provider_name = provider.name.clone();
+
+    // Determine provider type
+    let provider_type = determine_provider_type(&request.provider_id, &api_url, &provider_name);
+
+    // Try to send a simple test message to verify the model works
+    let test_messages = vec![
+        ai::ChatMessage {
+            role: "user".to_string(),
+            content: "Hello".to_string(),
+        }
+    ];
+
+    // Get AI client and clone it for async use
+    let ai_client = {
+        let client = app_state.ai_client.lock().unwrap();
+        client.clone()
+    };
+
+    // Call appropriate API based on provider type
+    let result = match provider_type.as_str() {
+        "openai" => {
+            ai_client.openai_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        },
+        "deepseek" => {
+            // DeepSeek uses OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        },
+        "grok" => {
+            // Grok uses OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        },
+        "gemini" => {
+            ai_client.gemini_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        },
+        "custom" => {
+            // For custom providers, default to OpenAI-compatible API
+            ai_client.openai_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        },
+        _ => {
+            // Default to OpenAI-compatible API for unknown types
+            ai_client.openai_chat(&api_url, &api_key, &request.model_name, test_messages).await
+        }
+    };
+
+    // Return true if the request was successful, error message if failed
+    match result {
+        Ok(_) => Ok(true),
+        Err(e) => {
+            // Log the error for debugging
+            eprintln!("Model verification failed: {}", e);
+            // Return false for verification failure, but don't expose sensitive error details
+            Ok(false)
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize database and AI client before creating the app
@@ -644,6 +726,7 @@ async fn main() {
             
             // AI commands
             send_chat_request,
+            verify_model,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running tauri application");
