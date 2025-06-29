@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import TypeWriter from "./TypeWriter";
 
 // Component for code blocks in markdown
 const CodeBlock = ({ language, children }) => {
@@ -16,20 +17,63 @@ const CodeBlock = ({ language, children }) => {
   );
 };
 
-export default function Message({ message, isLoading = false }) {
+export default function Message({ message, isLoading = false, isNew = false, stopRef = null, onTypingStatusChange = () => {} }) {
   const { role, content, reasoning } = message;
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
+  const [showFullContent, setShowFullContent] = useState(false);
+  const messageRef = useRef(null);
+  
+  // 确保content始终是字符串
+  const safeContent = typeof content === 'string' ? content : String(content || '');
+  
+  // 只有是新回复、AI消息、且不是加载中时，才使用打字效果
+  const useTypewriter = !isUser && !isLoading && !showFullContent && isNew;
+
+  // 监听停止标志变化
+  useEffect(() => {
+    if (stopRef && stopRef.current === true && useTypewriter) {
+      console.log("Message组件检测到停止标志");
+      setShowFullContent(true);
+      onTypingStatusChange(false);
+    }
+  }, [stopRef?.current, useTypewriter, onTypingStatusChange]);
+
+  // 通知父组件打字状态
+  useEffect(() => {
+    if (isNew && !isUser && !isLoading) {
+      // 如果是新的AI回复，则设置为正在打字状态
+      onTypingStatusChange(true);
+      console.log("设置打字状态为true");
+    }
+  }, [isNew, isUser, isLoading, onTypingStatusChange]);
 
   // Function to copy message content to clipboard
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(content);
+    navigator.clipboard.writeText(safeContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // 打字效果完成后的回调
+  const handleTypewriterComplete = () => {
+    console.log("打字效果完成");
+    setShowFullContent(true);
+    
+    // 告知父组件打字效果已完成
+    onTypingStatusChange(false);
+    
+    // 如果提供了stopRef，则重置它
+    if (stopRef) {
+      stopRef.current = false;
+    }
+  };
+
   return (
-    <div className={`py-5 ${isUser ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800"}`}>
+    <div 
+      ref={messageRef}
+      className={`py-5 ${isUser ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800"}`}
+    >
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex items-start">
           {/* Avatar */}
@@ -53,24 +97,33 @@ export default function Message({ message, isLoading = false }) {
             
             {/* Markdown content */}
             <div className={`mt-1 prose dark:prose-invert max-w-none ${isLoading ? "opacity-50" : ""}`}>
-              <ReactMarkdown
-                components={{
-                  code({ node, inline, className, children, ...props }) {
-                    const match = /language-(\w+)/.exec(className || "");
-                    return !inline ? (
-                      <CodeBlock language={match ? match[1] : ""} {...props}>
-                        {children}
-                      </CodeBlock>
-                    ) : (
-                      <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...props}>
-                        {children}
-                      </code>
-                    );
-                  },
-                }}
-              >
-                {content}
-              </ReactMarkdown>
+              {useTypewriter ? (
+                <TypeWriter 
+                  text={safeContent} 
+                  delay={15} 
+                  onComplete={handleTypewriterComplete} 
+                  stopRef={stopRef} // 确保正确传递stopRef
+                />
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    code({ node, inline, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      return !inline ? (
+                        <CodeBlock language={match ? match[1] : ""} {...props}>
+                          {children}
+                        </CodeBlock>
+                      ) : (
+                        <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded" {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {safeContent}
+                </ReactMarkdown>
+              )}
             </div>
             
             {/* Reasoning/thinking (if available) */}
@@ -81,7 +134,7 @@ export default function Message({ message, isLoading = false }) {
                     Show thinking process
                   </summary>
                   <div className="mt-2 pl-4 border-l-2 border-gray-300 dark:border-gray-600 prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{reasoning}</ReactMarkdown>
+                    <ReactMarkdown>{typeof reasoning === 'string' ? reasoning : String(reasoning || '')}</ReactMarkdown>
                   </div>
                 </details>
               </div>

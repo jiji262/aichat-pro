@@ -1,8 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
 import Message from "../components/Message";
+
+// 简单的防抖函数
+function debounce(fn, delay) {
+  let timer = null;
+  return function(...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  };
+}
 
 export default function ChatPage() {
   const { t } = useI18n();
@@ -11,7 +22,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [inputHeight, setInputHeight] = useState("auto"); // Track textarea height separately
+  const [minInputHeight, setMinInputHeight] = useState(40); // 设置最小输入框高度
+  const [savedUserInput, setSavedUserInput] = useState(""); // 保存用户输入，以便在取消时恢复
   const [streamingMessage, setStreamingMessage] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isTypingResponse, setIsTypingResponse] = useState(false); // 添加打字效果状态
+  const stopGenerationRef = useRef(false);
 
   const [providers, setProviders] = useState([]);
   const [selectedProviderId, setSelectedProviderId] = useState("");
@@ -112,6 +129,13 @@ export default function ChatPage() {
           sessionId: sessionId 
         });
         setMessages(chatMessages);
+        
+        // 消息加载完成后，设置一个短延迟滚动到底部
+        setTimeout(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 100);
       } catch (error) {
         console.error("Failed to load chat:", error);
       } finally {
@@ -129,18 +153,104 @@ export default function ChatPage() {
     }
   }, [messages, streamingMessage]);
   
-  // Auto resize textarea as content grows
+  // Auto resize textarea as content grows - optimized
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "0";
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${scrollHeight}px`;
+      // Debounce height adjustments to reduce jitter
+      const adjustHeight = () => {
+        const textarea = textareaRef.current;
+        // 保存当前高度作为最小高度，以防止提交后高度突然变小
+        if (userInput.length > 0) {
+          const currentHeight = Math.max(40, textarea.scrollHeight);
+          setMinInputHeight(currentHeight);
+        }
+        
+        // Start with minimal height to measure properly
+        textarea.style.height = "0";
+        // Set to scrollHeight to fit content exactly,但不小于最小高度
+        const newHeight = Math.min(200, Math.max(minInputHeight, textarea.scrollHeight));
+        setInputHeight(`${newHeight}px`);
+      };
+
+      // Slight delay before adjustment to batch change operations
+      const timeoutId = setTimeout(adjustHeight, 0);
+      return () => clearTimeout(timeoutId);
     }
-  }, [userInput]);
+  }, [userInput, minInputHeight]);
   
+  // 停止生成的处理函数
+  const handleStopGeneration = () => {
+    console.log("停止生成被触发");
+    // 设置停止标志，这会被TypeWriter组件检测到
+    stopGenerationRef.current = true;
+    
+    // 如果正在显示thinking状态，直接移除
+    if (streamingMessage) {
+      setStreamingMessage(null);
+    }
+    
+    // 重置打字效果状态 - 立即重置状态以更新UI
+    setIsTypingResponse(false);
+    
+    // 查找当前正在打字的消息，并标记为非新消息，这样就不会再显示打字效果
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.isNew ? { ...msg, isNew: false } : msg
+      )
+    );
+    
+    // 恢复用户输入
+    if (savedUserInput) {
+      setUserInput(savedUserInput);
+      
+      // 调整输入框高度以适应恢复的文本
+      if (textareaRef.current) {
+        setTimeout(() => {
+          const textarea = textareaRef.current;
+          textarea.style.height = "0";
+          const scrollHeight = textarea.scrollHeight;
+          setInputHeight(`${Math.min(200, Math.max(40, scrollHeight))}px`);
+        }, 0);
+      }
+    }
+    
+    setSavedUserInput("");
+    
+    // 重置生成状态
+    setIsGenerating(false);
+    
+    // 在下一个事件循环中再次检查，确保停止状态被正确处理
+    setTimeout(() => {
+      if (stopGenerationRef.current) {
+        console.log("确认停止生成");
+        // 强制重新渲染
+        setIsGenerating(false);
+        setIsTypingResponse(false);
+      }
+    }, 50);
+  };
+
+  // 清除输入框内容但保留高度
+  const clearInputButKeepHeight = () => {
+    // 先保存当前高度
+    const currentHeight = textareaRef.current ? textareaRef.current.scrollHeight : 40;
+    setMinInputHeight(Math.max(40, currentHeight));
+    // 然后清空内容
+    setUserInput("");
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log("提交或停止按钮被点击", { isGenerating, streamingMessage, isTypingResponse });
+    
+    // 如果正在生成或显示thinking状态或打字效果，则点击按钮时停止生成
+    if (isGenerating || streamingMessage || isTypingResponse) {
+      console.log("触发停止生成");
+      handleStopGeneration();
+      return;
+    }
     
     if (!userInput.trim() || !sessionId) return;
     
@@ -158,6 +268,13 @@ export default function ChatPage() {
       return;
     }
     
+    // 重置停止生成标志
+    stopGenerationRef.current = false;
+    setIsGenerating(true);
+    
+    // 保存用户输入，以便在取消时恢复
+    setSavedUserInput(userInput);
+    
     // Create user message
     const userMessage = {
       role: "user",
@@ -174,8 +291,8 @@ export default function ChatPage() {
         },
       });
       
-      // Clear input
-      setUserInput("");
+      // 清除输入但保持高度
+      clearInputButKeepHeight();
       
       // Add message to state
       setMessages((prevMessages) => [
@@ -183,11 +300,24 @@ export default function ChatPage() {
         { ...userMessage, id: userMessageId, timestamp: Date.now() }
       ]);
       
+      // 检查是否已停止生成
+      if (stopGenerationRef.current) {
+        setIsGenerating(false);
+        return;
+      }
+      
       // Show AI thinking indicator
       setStreamingMessage({
         role: "assistant",
         content: t('chat.thinking'),
       });
+      
+      // 检查是否已停止生成
+      if (stopGenerationRef.current) {
+        setStreamingMessage(null);
+        setIsGenerating(false);
+        return;
+      }
       
       // Send message to AI
       const response = await invoke("send_chat_request", {
@@ -197,6 +327,13 @@ export default function ChatPage() {
           messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage]
         }
       });
+      
+      // 检查是否已停止生成
+      if (stopGenerationRef.current) {
+        setStreamingMessage(null);
+        setIsGenerating(false);
+        return;
+      }
       
       // Remove streaming indicator
       setStreamingMessage(null);
@@ -210,7 +347,7 @@ export default function ChatPage() {
         },
       });
       
-      // Add message to state
+      // Add message to state with isNew标记
       setMessages((prevMessages) => [
         ...prevMessages,
         { 
@@ -218,9 +355,13 @@ export default function ChatPage() {
           role: "assistant", 
           content: response.content,
           reasoning: response.reasoning,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          isNew: true // 添加新回复标记
         }
       ]);
+      
+      // 清除保存的输入，因为请求已成功
+      setSavedUserInput("");
       
     } catch (error) {
       console.error("Error sending message:", error);
@@ -238,6 +379,14 @@ export default function ChatPage() {
           timestamp: Date.now()
         }
       ]);
+      
+      // 恢复用户输入到输入框
+      setUserInput(savedUserInput);
+      setSavedUserInput("");
+      
+    } finally {
+      // 无论成功或失败，都重置生成状态
+      setIsGenerating(false);
     }
   };
   
@@ -266,6 +415,50 @@ export default function ChatPage() {
     }
   }, [selectedModelId]);
   
+  // 处理打字状态变化的回调
+  const handleTypingStatusChange = (isTyping) => {
+    setIsTypingResponse(isTyping);
+  };
+
+  // 使用useCallback和防抖来优化输入处理
+  const handleInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setUserInput(value);
+  }, []);
+
+  // 记忆消息列表组件以减少不必要的重渲染
+  const messageListMemo = useMemo(() => {
+    return (
+      <>
+        {/* System message if set */}
+        {chatSession && chatSession.system_prompt && (
+          <Message 
+            message={{ 
+              role: "system", 
+              content: chatSession.system_prompt 
+            }} 
+          />
+        )}
+        
+        {/* Chat messages */}
+        {messages.map((message) => (
+          <Message 
+            key={message.id} 
+            message={message} 
+            isNew={message.isNew || false} 
+            stopRef={stopGenerationRef}
+            onTypingStatusChange={handleTypingStatusChange}
+          />
+        ))}
+        
+        {/* Streaming message (AI thinking) */}
+        {streamingMessage && (
+          <Message message={streamingMessage} isLoading={true} />
+        )}
+      </>
+    );
+  }, [messages, chatSession, streamingMessage, stopGenerationRef, handleTypingStatusChange]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
@@ -323,25 +516,8 @@ export default function ChatPage() {
               </div>
             ) : (
               <>
-                {/* System message if set */}
-                {chatSession && chatSession.system_prompt && (
-                  <Message 
-                    message={{ 
-                      role: "system", 
-                      content: chatSession.system_prompt 
-                    }} 
-                  />
-                )}
-                
-                {/* Chat messages */}
-                {messages.map((message) => (
-                  <Message key={message.id} message={message} />
-                ))}
-                
-                {/* Streaming message (AI thinking) */}
-                {streamingMessage && (
-                  <Message message={streamingMessage} isLoading={true} />
-                )}
+                {/* Memoized message list */}
+                {messageListMemo}
                 
                 {/* Empty state */}
                 {messages.length === 0 && !streamingMessage && (
@@ -379,9 +555,14 @@ export default function ChatPage() {
                 <textarea
                   ref={textareaRef}
                   value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
+                  onChange={handleInputChange}
                   placeholder={t('chat.typeMessage')}
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                  style={{ 
+                    height: inputHeight, 
+                    minHeight: `${minInputHeight}px`, // 设置最小高度
+                    overflow: userInput.length > 100 ? 'auto' : 'hidden' 
+                  }}
                   rows="1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -394,11 +575,23 @@ export default function ChatPage() {
               <button
                 type="submit"
                 className="btn btn-primary btn-icon"
-                disabled={!userInput.trim() || streamingMessage}
+                disabled={(!userInput.trim() && !isGenerating && !streamingMessage && !isTypingResponse)}
+                title={(isGenerating || streamingMessage || isTypingResponse) ? t('chat.stopGeneration') || "Stop generation" : t('chat.send') || "Send"}
+                onClick={(e) => {
+                  // 直接在点击事件中处理，避免表单提交可能的延迟
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                </svg>
+                {(isGenerating || streamingMessage || isTypingResponse) ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                  </svg>
+                )}
               </button>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
