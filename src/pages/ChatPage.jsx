@@ -79,6 +79,32 @@ export default function ChatPage() {
         // If session has a model_id, set it as selected
         if (session && session.model_id) {
           setSelectedModelId(session.model_id);
+          
+          // 获取此模型所属的提供商ID
+          try {
+            // 获取所有提供商
+            const allProviders = await invoke("get_providers");
+            
+            // 遍历每个提供商，找到包含所选模型的提供商
+            for (const provider of allProviders) {
+              const providerModels = await invoke("get_models", { 
+                providerId: provider.id 
+              });
+              
+              // 检查此提供商是否拥有当前选择的模型
+              const hasModel = providerModels.some(model => model.id === session.model_id);
+              
+              if (hasModel) {
+                // 更新当前选择的提供商
+                setSelectedProviderId(provider.id);
+                // 更新当前提供商的模型列表
+                setModels(providerModels);
+                break;
+              }
+            }
+          } catch (error) {
+            console.error("Failed to find provider for model:", error);
+          }
         }
         
         // Load chat messages

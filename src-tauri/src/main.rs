@@ -534,7 +534,7 @@ async fn send_chat_request(
     app_state: State<'_, AppState>,
     request: ChatRequest
 ) -> Result<ai::AIResponse, String> {
-    // Get provider and model details
+    // Get provider details
     let provider = {
         let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
         db::get_provider_by_id(&conn, &request.provider_id)
@@ -550,14 +550,22 @@ async fn send_chat_request(
     // Get the actual model name from the database
     let model_name = {
         let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
+        
+        // 使用model_id作为参数，查找对应的模型
         let models = db::get_models_by_provider(&conn, &request.provider_id)
             .map_err(|e| e.to_string())?;
         
         let model = models.iter()
-            .find(|m| m.id == request.model_id)
-            .ok_or_else(|| format!("Model with ID {} not found", request.model_id))?;
-        
-        model.name.clone()
+            .find(|m| m.id == request.model_id);
+            
+        match model {
+            Some(found_model) => found_model.name.clone(),
+            None => {
+                // 如果在数据库中找不到这个model_id，直接使用model_id作为模型名
+                // 这解决了自定义API可能将UUID作为模型名的问题
+                request.model_id.clone()
+            }
+        }
     };
     
     // Get information needed for API call

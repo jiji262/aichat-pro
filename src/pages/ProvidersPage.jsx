@@ -44,11 +44,23 @@ export default function ProvidersPage() {
     try {
       setIsLoading(true);
       const allProviders = await invoke("get_providers");
-      setProviders(allProviders);
+      
+      // 过滤掉没有设置API密钥的默认提供商
+      const filteredProviders = allProviders.filter(provider => {
+        // 如果是默认提供商(ID长度较短，如"openai", "gemini"等)
+        if (provider.id && !provider.id.includes('-')) {
+          // 只有设置了API密钥的默认提供商才显示
+          return provider.api_key !== null && provider.api_key !== undefined && provider.api_key !== '';
+        }
+        // 自定义提供商总是显示
+        return true;
+      });
+      
+      setProviders(filteredProviders);
       
       // Initialize edit forms for each provider
       const initialForms = {};
-      allProviders.forEach(provider => {
+      filteredProviders.forEach(provider => {
         initialForms[provider.id] = {
           name: provider.name,
           apiUrl: provider.api_url,
@@ -58,7 +70,7 @@ export default function ProvidersPage() {
       setEditForms(initialForms);
       
       // Load models for each provider
-      allProviders.forEach(provider => {
+      filteredProviders.forEach(provider => {
         loadModelsForProvider(provider.id);
       });
     } catch (error) {
@@ -133,7 +145,7 @@ export default function ProvidersPage() {
         setFormApiUrl("https://api.grok.x.ai");
         break;
       case "custom":
-        setFormApiUrl(""); // 清空 API URL
+        setFormApiUrl(""); // 清空 API URL，但将使用OpenAI API标准
         break;
       default:
         // 不应该到达这里
@@ -154,15 +166,15 @@ export default function ProvidersPage() {
       // Add new provider
       if (!formApiKey) return; // API key is required for new providers
       
-      // 根据类型设置 ID 前缀
-      const idPrefix = formType !== "custom" ? formType : "custom";
+      // 自定义提供商使用OpenAI API格式
+      const idPrefix = formType !== "custom" ? formType : "openai";
       
       await invoke("add_provider", {
         provider: {
           name: formName,
           api_url: formApiUrl,
           api_key: formApiKey,
-          id_prefix: idPrefix // 传递 ID 前缀给后端
+          id_prefix: idPrefix // 传递 ID 前缀给后端，custom类型使用openai作为前缀
         }
       });
       
@@ -713,6 +725,11 @@ export default function ProvidersPage() {
                     Custom
                   </button>
                 </div>
+                {formType === "custom" && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-0">
+                    <span className="italic">Note: Custom providers will use the OpenAI API standard.</span>
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
