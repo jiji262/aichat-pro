@@ -20,6 +20,7 @@ export default function ProvidersPage() {
   
   const [modelsMap, setModelsMap] = useState({});
   const [loadingModels, setLoadingModels] = useState({});
+  const [expandedProviders, setExpandedProviders] = useState({}); // 控制各提供商模型折叠/展开
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, provider: null });
   const [addModelDialog, setAddModelDialog] = useState({ show: false, providerId: null, modelName: "" });
   const [deleteModelConfirm, setDeleteModelConfirm] = useState({ show: false, model: null, providerId: null });
@@ -425,6 +426,11 @@ export default function ProvidersPage() {
     const providerType = determine_provider_type(provider.id, provider.api_url, provider.name);
     const supportsModelFetching = providerType !== 'claude'; // Claude does not support fetching
     
+    const MAX_VISIBLE_MODELS = 3;
+    const isExpanded = !!expandedProviders[provider.id];
+    const visibleModels = isExpanded ? models : models.slice(0, MAX_VISIBLE_MODELS);
+    const hiddenCount = Math.max(0, models.length - MAX_VISIBLE_MODELS);
+
     return (
       <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
 
@@ -518,7 +524,9 @@ export default function ProvidersPage() {
         </div>
         
         <div className="mt-6 mb-3 flex justify-between items-center">
-          <h3 className="text-lg font-medium">Models</h3>
+          <h3 className="text-lg font-medium">
+            Models <span className="ml-1 text-sm text-gray-500">({models.length})</span>
+          </h3>
           <div className="space-x-2">
             <button
               onClick={() => fetchModelsFromProvider(provider.id)}
@@ -563,8 +571,9 @@ export default function ProvidersPage() {
             </div>
           </div>
         ) : (
+          <>
           <ul className="space-y-1 mt-2">
-            {models.map((model) => {
+            {visibleModels.map((model) => {
               const status = verificationStatus[model.id] || {};
               return (
                 <li key={model.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded">
@@ -609,6 +618,17 @@ export default function ProvidersPage() {
               )
             })}
           </ul>
+          {hiddenCount > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !isExpanded }))}
+                className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
+              >
+                {isExpanded ? t('providers.showLess') : t('providers.showMore', { count: hiddenCount })}
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
     );
