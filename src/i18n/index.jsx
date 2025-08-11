@@ -39,12 +39,30 @@ const translations = {
       thinking: 'Thinking...',
       typeMessage: 'Type your message...',
       send: 'Send',
+      stopGeneration: 'Stop Generation',
       you: 'You',
       aiAssistant: 'AI Assistant',
       selectProvider: 'Select Provider',
       selectModel: 'Select Model',
+      selectChat: 'Select a chat',
       noProviders: 'No providers available. Please add a provider first.',
       noModels: 'No models available for this provider.',
+      noMessages: 'No messages yet',
+      noChatSelected: 'No chat selected',
+      startConversation: 'Start the conversation by sending a message below',
+      selectChatFromSidebar: 'Select a chat from the sidebar or create a new one',
+      inputHint: 'Press Shift+Enter for a new line, Enter to send',
+    },
+    
+    // Sidebar
+    sidebar: {
+      searchChats: 'Search chats...',
+      noSearchResults: 'No chats found',
+      noChats: 'No chats yet',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      thisWeek: 'This Week',
+      older: 'Older',
     },
     
     // Providers
@@ -159,12 +177,30 @@ const translations = {
       thinking: '思考中...',
       typeMessage: '输入您的消息...',
       send: '发送',
+      stopGeneration: '停止生成',
       you: '您',
       aiAssistant: 'AI助手',
       selectProvider: '选择提供商',
       selectModel: '选择模型',
+      selectChat: '选择聊天',
       noProviders: '没有可用的提供商。请先添加一个提供商。',
       noModels: '此提供商没有可用的模型。',
+      noMessages: '暂无消息',
+      noChatSelected: '未选择聊天',
+      startConversation: '在下方发送消息开始对话',
+      selectChatFromSidebar: '从侧边栏选择聊天或创建新聊天',
+      inputHint: '按 Shift+Enter 换行，Enter 发送',
+    },
+    
+    // Sidebar
+    sidebar: {
+      searchChats: '搜索聊天...',
+      noSearchResults: '未找到聊天',
+      noChats: '暂无聊天',
+      today: '今天',
+      yesterday: '昨天',
+      thisWeek: '本周',
+      older: '更早',
     },
     
     // Providers
@@ -256,9 +292,18 @@ export function I18nProvider({ children }) {
   useEffect(() => {
     const loadLanguage = async () => {
       try {
-        const savedLanguage = await invoke('get_setting', { key: 'language' });
-        if (savedLanguage && translations[savedLanguage]) {
-          setLanguage(savedLanguage);
+        // Check if we're running in Tauri environment
+        if (window.__TAURI__) {
+          const savedLanguage = await invoke('get_setting', { key: 'language' });
+          if (savedLanguage && translations[savedLanguage]) {
+            setLanguage(savedLanguage);
+          }
+        } else {
+          // Use browser localStorage as fallback
+          const savedLanguage = localStorage.getItem('aichat-language');
+          if (savedLanguage && translations[savedLanguage]) {
+            setLanguage(savedLanguage);
+          }
         }
       } catch (error) {
         console.error('Failed to load language setting:', error);
@@ -275,7 +320,12 @@ export function I18nProvider({ children }) {
     if (translations[newLanguage]) {
       setLanguage(newLanguage);
       try {
-        await invoke('set_setting', { key: 'language', value: newLanguage });
+        if (window.__TAURI__) {
+          await invoke('set_setting', { key: 'language', value: newLanguage });
+        } else {
+          // Use browser localStorage as fallback
+          localStorage.setItem('aichat-language', newLanguage);
+        }
       } catch (error) {
         console.error('Failed to save language setting:', error);
       }

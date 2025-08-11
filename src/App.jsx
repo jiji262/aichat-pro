@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createHashRouter } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { I18nProvider } from "./i18n/index.jsx";
 import "./styles.css";
@@ -12,8 +12,8 @@ import AssistantsPage from "./pages/AssistantsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AboutPage from "./pages/AboutPage";
 
-// Create router
-const router = createBrowserRouter([
+// Create router (HashRouter is safer for Tauri packaged apps)
+const router = createHashRouter([
   {
     path: "/",
     element: <Layout />,

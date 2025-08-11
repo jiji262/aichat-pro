@@ -13,9 +13,15 @@ export default function SettingsPage() {
     const loadSettings = async () => {
       try {
         setIsLoading(true);
-        const themeSetting = await invoke("get_setting", { key: "theme" });
-        if (themeSetting) {
-          setTheme(themeSetting);
+        
+        if (window.__TAURI__) {
+          const themeSetting = await invoke("get_setting", { key: "theme" });
+          if (themeSetting) {
+            setTheme(themeSetting);
+          }
+        } else {
+          // Use default theme in browser environment
+          setTheme("system");
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -33,12 +39,15 @@ export default function SettingsPage() {
       setIsSaving(true);
       
       // Save to backend
-      await invoke("set_setting", {
-        setting: {
-          key: "theme",
-          value: newTheme
-        }
-      });
+      if (window.__TAURI__) {
+        await invoke("set_setting", {
+          setting: {
+            key: "theme",
+            value: newTheme
+          }
+        });
+      }
+      // In browser environment, just update local state
       
       // Update state
       setTheme(newTheme);

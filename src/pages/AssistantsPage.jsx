@@ -23,7 +23,22 @@ export default function AssistantsPage() {
   async function loadAssistants() {
     try {
       setIsLoading(true);
-      const allAssistants = await invoke("get_assistants");
+      
+      let allAssistants;
+      if (window.__TAURI__) {
+        allAssistants = await invoke("get_assistants");
+      } else {
+        // Mock data for browser environment
+        allAssistants = [
+          {
+            id: "mock-assistant-1",
+            name: "Mock Coding Assistant",
+            description: "Helps with coding tasks",
+            system_prompt: "You are a helpful coding assistant."
+          }
+        ];
+      }
+      
       setAssistants(allAssistants);
     } catch (error) {
       console.error("Failed to load assistants:", error);
@@ -62,26 +77,29 @@ export default function AssistantsPage() {
     if (!formName || !formSystemPrompt) return;
     
     try {
-      if (editingAssistantId) {
-        // Update existing assistant
-        await invoke("update_assistant", {
-          assistant: {
-            id: editingAssistantId,
-            name: formName,
-            description: formDescription || "", // Empty string if not provided
-            system_prompt: formSystemPrompt
-          }
-        });
-      } else {
-        // Add new assistant
-        await invoke("create_assistant", {
-          assistant: {
-            name: formName,
-            description: formDescription || "", // Empty string if not provided
-            system_prompt: formSystemPrompt
-          }
-        });
+      if (window.__TAURI__) {
+        if (editingAssistantId) {
+          // Update existing assistant
+          await invoke("update_assistant", {
+            assistant: {
+              id: editingAssistantId,
+              name: formName,
+              description: formDescription || "", // Empty string if not provided
+              system_prompt: formSystemPrompt
+            }
+          });
+        } else {
+          // Add new assistant
+          await invoke("create_assistant", {
+            assistant: {
+              name: formName,
+              description: formDescription || "", // Empty string if not provided
+              system_prompt: formSystemPrompt
+            }
+          });
+        }
       }
+      // In browser environment, just skip the API call
       
       // Reload assistants
       await loadAssistants();
@@ -115,8 +133,11 @@ export default function AssistantsPage() {
       setAssistants(prev => prev.filter(a => a.id !== assistant.id));
 
       // 然后发送删除请求到后端
-      const result = await invoke("delete_assistant", { id: assistant.id });
-      console.log("Step 2: Backend API response:", result);
+      if (window.__TAURI__) {
+        const result = await invoke("delete_assistant", { id: assistant.id });
+        console.log("Step 2: Backend API response:", result);
+      }
+      // In browser environment, just skip the API call
 
       // 关闭确认对话框
       setDeleteConfirm({ show: false, assistant: null });

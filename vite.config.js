@@ -6,6 +6,9 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
+  // Ensure relative asset paths in Tauri bundles to avoid white screen
+  // when the app loads packaged files (no HTTP origin).
+  base: "./",
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -27,5 +30,11 @@ export default defineConfig(async () => ({
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
+  },
+  build: {
+    target: ["es2021", "safari13"],
+    // Helpful for debugging packaged white-screen issues
+    sourcemap: !!process.env.TAURI_DEBUG,
+    minify: !process.env.TAURI_DEBUG,
   },
 }));

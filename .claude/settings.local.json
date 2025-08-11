@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm tauri build --target universal-apple-darwin)",
+      "Bash(rustup target add x86_64-apple-darwin)",
+      "Bash(pnpm build)"
+    ],
+    "deny": []
+  }
+}
