@@ -666,12 +666,71 @@ export default function ProvidersPage() {
       
       {/* 可滚动内容区域 */}
       <div ref={scrollableContainerRef} className="flex-1 overflow-y-auto p-6 pt-2">
-        {/* Add/Edit Form */}
-        {showAddForm && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {t('providers.addProvider')}
-            </h2>
+        
+        {/* Providers List */}
+        {isLoading && providers.length === 0 ? (
+          <div className="text-center py-4">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
+          </div>
+        ) : providers.length === 0 ? (
+          <div className="text-center p-8">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('providers.noProviders')}</p>
+            <button
+              onClick={openAddForm}
+              className="btn btn-primary"
+            >
+              {t('providers.addFirstProvider')}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {providers.map(renderProviderCard)}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">{t('providers.confirmDelete')}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {t('providers.confirmDeleteProvider', { name: deleteConfirm.provider?.name })}
+              <br />
+              <span className="text-red-500 text-sm">{t('providers.cannotUndo')}</span>
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              >
+                {t('common.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Provider Dialog */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">{t('providers.addProvider')}</h2>
+              <button
+                onClick={cancelForm}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -751,7 +810,7 @@ export default function ProvidersPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('common.name')}
@@ -765,7 +824,7 @@ export default function ProvidersPage() {
                   required
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('providers.apiUrl')}
@@ -779,7 +838,7 @@ export default function ProvidersPage() {
                   required
                 />
               </div>
-              
+
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('providers.apiKey')} <span className="text-red-500">*</span>
@@ -793,12 +852,12 @@ export default function ProvidersPage() {
                   required
                 />
               </div>
-              
+
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={cancelForm}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
                 >
                   {t('common.cancel')}
                 </button>
@@ -813,55 +872,6 @@ export default function ProvidersPage() {
                 </button>
               </div>
             </form>
-          </div>
-        )}
-        
-        {/* Providers List */}
-        {isLoading && providers.length === 0 ? (
-          <div className="text-center py-4">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
-          </div>
-        ) : providers.length === 0 ? (
-          <div className="text-center p-8">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('providers.noProviders')}</p>
-            <button
-              onClick={openAddForm}
-              className="btn btn-primary"
-            >
-              {t('providers.addFirstProvider')}
-            </button>
-          </div>
-        ) : (
-          <div>
-            {providers.map(renderProviderCard)}
-          </div>
-        )}
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">{t('providers.confirmDelete')}</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {t('providers.confirmDeleteProvider', { name: deleteConfirm.provider?.name })}
-              <br />
-              <span className="text-red-500 text-sm">{t('providers.cannotUndo')}</span>
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-              >
-                {t('common.confirm')}
-              </button>
-            </div>
           </div>
         </div>
       )}
