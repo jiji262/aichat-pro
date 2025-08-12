@@ -170,8 +170,9 @@ export default function ChatPage() {
               if (hasModel) {
                 // 更新当前选择的提供商
                 setSelectedProviderId(provider.id);
-                // 更新当前提供商的模型列表
-                setModels(providerModels);
+                // 只设置收藏的模型列表
+                const favoriteModels = providerModels.filter(model => model.is_favorite);
+                setModels(favoriteModels);
                 break;
               }
             }

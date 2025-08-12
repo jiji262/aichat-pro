@@ -29,7 +29,7 @@ const translations = {
     nav: {
       chat: "Chat",
       providers: "Providers",
-      assistants: "Assistants",
+
       settings: "Settings",
     },
 
@@ -41,7 +41,7 @@ const translations = {
       send: "Send",
       stopGeneration: "Stop Generation",
       you: "You",
-      aiAssistant: "AI Assistant",
+
       selectProvider: "Select Provider",
       selectModel: "Select Model",
       selectChat: "Select a chat",
@@ -100,18 +100,7 @@ const translations = {
       failedToDeleteModel: "Failed to delete model",
     },
 
-    // Assistants
-    assistants: {
-      title: "AI Assistants",
-      addAssistant: "Add Assistant",
-      systemPrompt: "System Prompt",
-      noAssistants: "No assistants created yet.",
-      addFirstAssistant: "Create your first AI assistant.",
-      confirmDelete: "Are you sure you want to delete this assistant?",
-      deleteSuccess: "Assistant deleted successfully",
-      failedToSave: "Failed to save assistant",
-      failedToDelete: "Failed to delete assistant",
-    },
+
 
     // Settings
     settings: {
@@ -131,7 +120,7 @@ const translations = {
       sessionDeleted: "Session deleted successfully",
       providerDeleted: "Provider deleted successfully",
       modelDeleted: "Model deleted successfully",
-      assistantDeleted: "Assistant deleted successfully",
+
       settingsSaved: "Settings saved successfully",
     },
 
@@ -178,7 +167,7 @@ const translations = {
     nav: {
       chat: "聊天",
       providers: "提供商",
-      assistants: "助手",
+
       settings: "设置",
     },
 
@@ -190,7 +179,7 @@ const translations = {
       send: "发送",
       stopGeneration: "停止生成",
       you: "您",
-      aiAssistant: "AI助手",
+
       selectProvider: "选择提供商",
       selectModel: "选择模型",
       selectChat: "选择聊天",
@@ -246,18 +235,7 @@ const translations = {
       failedToDeleteModel: "删除模型失败",
     },
 
-    // Assistants
-    assistants: {
-      title: "AI 助手",
-      addAssistant: "添加助手",
-      systemPrompt: "系统提示",
-      noAssistants: "尚未创建助手。",
-      addFirstAssistant: "创建您的第一个 AI 助手。",
-      confirmDelete: "确认删除此助手？",
-      deleteSuccess: "助手删除成功",
-      failedToSave: "保存助手失败",
-      failedToDelete: "删除助手失败",
-    },
+
 
     // Settings
     settings: {

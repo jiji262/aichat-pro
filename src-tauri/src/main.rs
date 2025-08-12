@@ -66,20 +66,7 @@ struct ChatMessageRequest {
     content: String,
 }
 
-#[derive(Deserialize)]
-struct AssistantRequest {
-    name: String,
-    description: String,
-    system_prompt: String,
-}
 
-#[derive(Deserialize)]
-struct AssistantUpdateRequest {
-    id: String,
-    name: String,
-    description: String,
-    system_prompt: String,
-}
 
 #[derive(Deserialize)]
 struct SettingRequest {
@@ -448,72 +435,7 @@ async fn add_chat_message(
         .map_err(|e| e.to_string())
 }
 
-// Tauri commands for assistants
-#[tauri::command]
-async fn get_assistants(app_state: State<'_, AppState>) -> Result<Vec<db::Assistant>, String> {
-    let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
-    db::get_all_assistants(&conn).map_err(|e| e.to_string())
-}
 
-#[tauri::command]
-async fn create_assistant(
-    app_state: State<'_, AppState>,
-    assistant: AssistantRequest
-) -> Result<String, String> {
-    let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
-    db::create_assistant(&conn, &assistant.name, &assistant.description, &assistant.system_prompt)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn update_assistant(
-    app_state: State<'_, AppState>,
-    assistant: AssistantUpdateRequest
-) -> Result<(), String> {
-    let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
-    db::update_assistant(&conn, &assistant.id, &assistant.name, &assistant.description, &assistant.system_prompt)
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn delete_assistant(
-    app_state: State<'_, AppState>,
-    id: String
-) -> Result<String, String> {
-    println!("Received delete_assistant request for ID: {}", id);
-    
-    let mut conn = match app_state.db_conn.lock() {
-        Ok(conn) => conn,
-        Err(e) => {
-            let err_msg = format!("Failed to lock database connection: {}", e);
-            println!("{}", err_msg);
-            return Err(err_msg);
-        }
-    };
-    
-    // Delete assistant from database
-    match db::delete_assistant(&mut conn, &id) {
-        Ok(_) => {
-            let msg = format!("Successfully deleted assistant with ID: {}", id);
-            println!("{}", msg);
-            Ok(msg)
-        },
-        Err(e) => {
-            let err_msg = format!("Failed to delete assistant: {}", e);
-            println!("{}", err_msg);
-            Err(err_msg)
-        }
-    }
-}
-
-#[tauri::command]
-async fn get_assistant(
-    app_state: State<'_, AppState>,
-    id: String
-) -> Result<Option<db::Assistant>, String> {
-    let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
-    db::get_assistant_by_id(&conn, &id).map_err(|e| e.to_string())
-}
 
 // Tauri commands for settings
 #[tauri::command]
@@ -738,12 +660,7 @@ async fn main() {
             get_chat_messages,
             add_chat_message,
             
-            // Assistant commands
-            get_assistants,
-            create_assistant,
-            update_assistant,
-            delete_assistant,
-            get_assistant,
+
             
             // Settings commands
             get_setting,

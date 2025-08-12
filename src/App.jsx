@@ -8,7 +8,7 @@ import "./styles.css";
 import Layout from "./components/Layout";
 import ChatPage from "./pages/ChatPage";
 import ProvidersPage from "./pages/ProvidersPage";
-import AssistantsPage from "./pages/AssistantsPage";
+
 import SettingsPage from "./pages/SettingsPage";
 import AboutPage from "./pages/AboutPage";
 
@@ -30,10 +30,7 @@ const router = createHashRouter([
         path: "/providers",
         element: <ProvidersPage />,
       },
-      {
-        path: "/assistants",
-        element: <AssistantsPage />,
-      },
+
       {
         path: "/settings",
         element: <SettingsPage />,
