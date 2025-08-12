@@ -275,6 +275,7 @@ impl AIClient {
     }
 
     // Fetch models from Gemini (placeholder for future implementation)
+    #[allow(dead_code)]
     pub async fn fetch_gemini_models(
         &self,
         _api_url: &str,

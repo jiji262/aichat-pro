@@ -439,6 +439,7 @@ pub fn toggle_model_favorite(conn: &Connection, model_id: &str, is_favorite: boo
 }
 
 // Get only favorite models for a provider
+#[allow(dead_code)]
 pub fn get_favorite_models_by_provider(conn: &Connection, provider_id: &str) -> Result<Vec<AIModel>> {
     let mut stmt = conn.prepare(
         "SELECT id, provider_id, name, is_favorite, created_at, updated_at FROM ai_models WHERE provider_id = ? AND is_favorite = TRUE ORDER BY name ASC"
