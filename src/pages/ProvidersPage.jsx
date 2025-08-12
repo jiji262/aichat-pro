@@ -25,6 +25,7 @@ export default function ProvidersPage() {
   const [addModelDialog, setAddModelDialog] = useState({ show: false, providerId: null, modelName: "" });
   const [deleteModelConfirm, setDeleteModelConfirm] = useState({ show: false, model: null, providerId: null });
   const [verificationStatus, setVerificationStatus] = useState({});
+  const [verifyingAll, setVerifyingAll] = useState({});
   
   const scrollableContainerRef = useRef(null);
   const [scrollPosition, setScrollPosition] = useState(null);
@@ -402,11 +403,13 @@ export default function ProvidersPage() {
           ...prev,
           [model.id]: { status: 'verified' }
         }));
+        return true;
       } else {
         setVerificationStatus(prev => ({
           ...prev,
           [model.id]: { status: 'failed', message: 'Model verification failed' }
         }));
+        return false;
       }
     } catch (error) {
       console.error(`Failed to verify model ${model.name}:`, error);
@@ -414,6 +417,55 @@ export default function ProvidersPage() {
         ...prev,
         [model.id]: { status: 'error', message: error }
       }));
+      return false;
+    }
+  }
+
+  async function handleVerifyAllModels(providerId) {
+    const models = modelsMap[providerId] || [];
+    if (!models.length) return;
+
+    setVerifyingAll(prev => ({ ...prev, [providerId]: true }));
+
+    // Mark all as verifying first for immediate UI feedback
+    setVerificationStatus(prev => {
+      const updated = { ...prev };
+      models.forEach(m => {
+        updated[m.id] = { status: 'verifying' };
+      });
+      return updated;
+    });
+
+    // Concurrency-limited verification to balance speed and rate limits
+    const CONCURRENCY = 4;
+    let successCount = 0;
+    let failedCount = 0;
+    let idx = 0;
+    const worker = async () => {
+      while (true) {
+        const current = idx++;
+        if (current >= models.length) break;
+        const model = models[current];
+        try {
+          const ok = await handleVerifyModel(providerId, model);
+          if (ok) successCount += 1; else failedCount += 1;
+        } catch (e) {
+          // Individual failures are already reflected by handleVerifyModel
+          failedCount += 1;
+        }
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(CONCURRENCY, models.length) }, () => worker());
+    await Promise.all(workers);
+
+    setVerifyingAll(prev => ({ ...prev, [providerId]: false }));
+
+    const total = models.length;
+    try {
+      alert(t('providers.verifySummary', { total, success: successCount, failed: failedCount }));
+    } catch (_) {
+      console.log('Verify summary:', { total, success: successCount, failed: failedCount });
     }
   }
   
@@ -535,6 +587,13 @@ export default function ProvidersPage() {
               title={!supportsModelFetching ? t('providers.manualAddModelTooltip') : ''}
             >
               {isLoading ? t('common.loading') : t('providers.fetchModels')}
+            </button>
+            <button
+              onClick={() => handleVerifyAllModels(provider.id)}
+              className="px-3 py-1 bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 rounded-md text-sm hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={(models.length === 0) || verifyingAll[provider.id]}
+            >
+              {verifyingAll[provider.id] ? t('common.loading') : t('providers.verifyAll')}
             </button>
             <button
               onClick={() => showAddModelDialog(provider.id)}
