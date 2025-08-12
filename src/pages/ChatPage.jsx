@@ -38,24 +38,59 @@ export default function ChatPage() {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   
-  // Load providers
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const allProviders = await invoke("get_providers");
-        setProviders(allProviders);
-        
-        // Set first provider as default if available
-        if (allProviders.length > 0 && !selectedProviderId) {
+  // Load providers function
+  const loadProviders = useCallback(async () => {
+    try {
+      const allProviders = await invoke("get_providers");
+      setProviders(allProviders);
+      
+      // Set first provider as default if available
+      if (allProviders.length > 0 && !selectedProviderId) {
+        setSelectedProviderId(allProviders[0].id);
+      }
+      
+      // Check if currently selected provider still exists
+      if (selectedProviderId && !allProviders.find(p => p.id === selectedProviderId)) {
+        // If selected provider was deleted, reset to first available or empty
+        if (allProviders.length > 0) {
           setSelectedProviderId(allProviders[0].id);
+        } else {
+          setSelectedProviderId("");
+          setModels([]);
+          setSelectedModelId("");
         }
-      } catch (error) {
-        console.error("Failed to load providers:", error);
+      }
+    } catch (error) {
+      console.error("Failed to load providers:", error);
+    }
+  }, [selectedProviderId]);
+
+  // Load providers on mount
+  useEffect(() => {
+    loadProviders();
+  }, [loadProviders]);
+
+  // Reload providers when page becomes visible (to catch changes from other pages)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadProviders();
       }
     };
+
+    const handleFocus = () => {
+      loadProviders();
+    };
+
+    // Listen for both visibility change and window focus
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
     
-    loadProviders();
-  }, []);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadProviders]);
   
   // Load models when provider is selected
   useEffect(() => {
