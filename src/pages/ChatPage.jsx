@@ -42,18 +42,31 @@ export default function ChatPage() {
   const loadProviders = useCallback(async () => {
     try {
       const allProviders = await invoke("get_providers");
-      setProviders(allProviders);
+      
+      // Apply same filtering logic as ProvidersPage
+      // 过滤掉没有设置API密钥的默认提供商
+      const filteredProviders = allProviders.filter(provider => {
+        // 如果是默认提供商(ID长度较短，如"openai", "gemini"等)
+        if (provider.id && !provider.id.includes('-')) {
+          // 只有设置了API密钥的默认提供商才显示
+          return provider.api_key !== null && provider.api_key !== undefined && provider.api_key !== '';
+        }
+        // 自定义提供商总是显示
+        return true;
+      });
+      
+      setProviders(filteredProviders);
       
       // Set first provider as default if available
-      if (allProviders.length > 0 && !selectedProviderId) {
-        setSelectedProviderId(allProviders[0].id);
+      if (filteredProviders.length > 0 && !selectedProviderId) {
+        setSelectedProviderId(filteredProviders[0].id);
       }
       
       // Check if currently selected provider still exists
-      if (selectedProviderId && !allProviders.find(p => p.id === selectedProviderId)) {
+      if (selectedProviderId && !filteredProviders.find(p => p.id === selectedProviderId)) {
         // If selected provider was deleted, reset to first available or empty
-        if (allProviders.length > 0) {
-          setSelectedProviderId(allProviders[0].id);
+        if (filteredProviders.length > 0) {
+          setSelectedProviderId(filteredProviders[0].id);
         } else {
           setSelectedProviderId("");
           setModels([]);
@@ -98,15 +111,23 @@ export default function ChatPage() {
       if (!selectedProviderId) return;
       
       try {
-        const providerModels = await invoke("get_models", {
+        const allModels = await invoke("get_models", {
           providerId: selectedProviderId
         });
         
-        setModels(providerModels);
+        // Only show favorite models, no fallback to all models
+        const favoriteModels = allModels.filter(model => model.is_favorite);
         
-        // Set first model as default if available
-        if (providerModels.length > 0 && !selectedModelId) {
-          setSelectedModelId(providerModels[0].id);
+        setModels(favoriteModels);
+        
+        // Set first model as default if available, or maintain current selection if still valid
+        if (favoriteModels.length > 0) {
+          const currentModelStillValid = favoriteModels.some(model => model.id === selectedModelId);
+          if (!selectedModelId || !currentModelStillValid) {
+            setSelectedModelId(favoriteModels[0].id);
+          }
+        } else {
+          setSelectedModelId("");
         }
       } catch (error) {
         console.error("Failed to load models:", error);
@@ -291,12 +312,16 @@ export default function ChatPage() {
     
     // Check if provider and model are selected
     if (!selectedProviderId || !selectedModelId) {
+      const errorMessage = !selectedProviderId 
+        ? "No provider selected. Please select a provider first."
+        : "No favorite models available. Please go to the Providers page and mark some models as favorites by clicking the '+' button.";
+      
       setMessages((prevMessages) => [
         ...prevMessages,
         { 
           id: `error-${Date.now()}`, 
           role: "assistant", 
-          content: t('errors.providerNotFound'),
+          content: errorMessage,
           timestamp: Date.now()
         }
       ]);
@@ -525,6 +550,7 @@ export default function ChatPage() {
               value={selectedModelId}
               onChange={(e) => setSelectedModelId(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm"
+              disabled={models.length === 0}
             >
               {models.length > 0 ? (
                 models.map((model) => (
@@ -533,7 +559,7 @@ export default function ChatPage() {
                   </option>
                 ))
               ) : (
-                <option value="">{t('chat.noModels')}</option>
+                <option value="">No favorite models - Go to Providers page to add favorites</option>
               )}
             </select>
           </div>

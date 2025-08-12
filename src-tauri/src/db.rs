@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS ai_models (
     id TEXT PRIMARY KEY,
     provider_id TEXT NOT NULL,
     name TEXT NOT NULL,
+    is_favorite BOOLEAN DEFAULT FALSE,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (provider_id) REFERENCES ai_providers(id)
@@ -123,7 +124,7 @@ pub fn init_db(app_data_dir: &Path) -> Result<Connection> {
     let db_path = app_data_dir.join("aichat-pro.db");
     
     // Check if database already exists
-    let db_exists = db_path.exists();
+    let _db_exists = db_path.exists();
     
     // Open connection to the database
     let conn = Connection::open(db_path)
@@ -135,10 +136,8 @@ pub fn init_db(app_data_dir: &Path) -> Result<Connection> {
     // Add default providers only
     conn.execute_batch(DEFAULT_PROVIDERS_SQL)?;
     
-    // If database already existed, run migrations
-    if db_exists {
-        migrate_database(&conn)?;
-    }
+    // Always run migrations to ensure latest schema
+    migrate_database(&conn)?;
     
     Ok(conn)
 }
@@ -155,6 +154,20 @@ fn migrate_database(conn: &Connection) -> Result<()> {
     // Add api_key column if it doesn't exist
     if has_api_key == 0 {
         conn.execute("ALTER TABLE ai_providers ADD COLUMN api_key TEXT", [])?;
+    }
+    
+    // Check if is_favorite column exists in ai_models table
+    let has_is_favorite = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('ai_models') WHERE name = 'is_favorite'",
+        [],
+        |row| row.get::<_, i64>(0)
+    )?;
+    
+    // Add is_favorite column if it doesn't exist
+    if has_is_favorite == 0 {
+        conn.execute("ALTER TABLE ai_models ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE", [])?;
+        // Create index for performance
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_models_favorite ON ai_models(provider_id, is_favorite)", [])?;
     }
     
     Ok(())
@@ -351,6 +364,7 @@ pub struct AIModel {
     pub id: String,
     pub provider_id: String,
     pub name: String,
+    pub is_favorite: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -358,7 +372,7 @@ pub struct AIModel {
 // Get all models for a provider
 pub fn get_models_by_provider(conn: &Connection, provider_id: &str) -> Result<Vec<AIModel>> {
     let mut stmt = conn.prepare(
-        "SELECT id, provider_id, name, created_at, updated_at FROM ai_models WHERE provider_id = ?"
+        "SELECT id, provider_id, name, is_favorite, created_at, updated_at FROM ai_models WHERE provider_id = ? ORDER BY is_favorite DESC, name ASC"
     )?;
     
     let model_iter = stmt.query_map(params![provider_id], |row| {
@@ -366,8 +380,9 @@ pub fn get_models_by_provider(conn: &Connection, provider_id: &str) -> Result<Ve
             id: row.get(0)?,
             provider_id: row.get(1)?,
             name: row.get(2)?,
-            created_at: row.get(3)?,
-            updated_at: row.get(4)?,
+            is_favorite: row.get(3)?,
+            created_at: row.get(4)?,
+            updated_at: row.get(5)?,
         })
     })?;
 
@@ -384,8 +399,8 @@ pub fn add_model(conn: &Connection, provider_id: &str, name: &str) -> Result<Str
     let timestamp = get_current_timestamp();
     
     conn.execute(
-        "INSERT INTO ai_models (id, provider_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        params![id, provider_id, name, timestamp, timestamp],
+        "INSERT INTO ai_models (id, provider_id, name, is_favorite, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        params![id, provider_id, name, false, timestamp, timestamp],
     )?;
     
     Ok(id)
@@ -409,6 +424,42 @@ pub fn delete_model(conn: &mut Connection, id: &str) -> Result<()> {
     tx.commit()?;
     
     Ok(())
+}
+
+// Toggle favorite status of a model
+pub fn toggle_model_favorite(conn: &Connection, model_id: &str, is_favorite: bool) -> Result<()> {
+    let timestamp = get_current_timestamp();
+    
+    conn.execute(
+        "UPDATE ai_models SET is_favorite = ?, updated_at = ? WHERE id = ?",
+        params![is_favorite, timestamp, model_id],
+    )?;
+    
+    Ok(())
+}
+
+// Get only favorite models for a provider
+pub fn get_favorite_models_by_provider(conn: &Connection, provider_id: &str) -> Result<Vec<AIModel>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, provider_id, name, is_favorite, created_at, updated_at FROM ai_models WHERE provider_id = ? AND is_favorite = TRUE ORDER BY name ASC"
+    )?;
+    
+    let model_iter = stmt.query_map(params![provider_id], |row| {
+        Ok(AIModel {
+            id: row.get(0)?,
+            provider_id: row.get(1)?,
+            name: row.get(2)?,
+            is_favorite: row.get(3)?,
+            created_at: row.get(4)?,
+            updated_at: row.get(5)?,
+        })
+    })?;
+
+    let mut models = Vec::new();
+    for model in model_iter {
+        models.push(model?);
+    }
+    Ok(models)
 }
 
 // ====== Chat Session functions =======
@@ -773,4 +824,122 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<()> {
     )?;
     
     Ok(())
-} 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_db() -> Result<Connection> {
+        // Create in-memory database for testing
+        let conn = Connection::open(":memory:")?;
+        
+        // Execute schema SQL to create tables
+        conn.execute_batch(SCHEMA_SQL)?;
+        
+        Ok(conn)
+    }
+
+    #[test]
+    fn test_toggle_model_favorite() {
+        let conn = create_test_db().unwrap();
+        
+        // Add a test provider
+        let provider_id = add_provider_with_id(&conn, "test-provider", "Test Provider", "https://api.test.com", "test_key", "test-api-key").unwrap();
+        
+        // Add a test model
+        let model_id = add_model(&conn, &provider_id, "test-model").unwrap();
+        
+        // Initially should not be favorite
+        let models = get_models_by_provider(&conn, &provider_id).unwrap();
+        assert_eq!(models.len(), 1);
+        assert!(!models[0].is_favorite);
+        
+        // Toggle to favorite
+        toggle_model_favorite(&conn, &model_id, true).unwrap();
+        
+        // Should now be favorite
+        let models = get_models_by_provider(&conn, &provider_id).unwrap();
+        assert_eq!(models.len(), 1);
+        assert!(models[0].is_favorite);
+        
+        // Toggle back to not favorite
+        toggle_model_favorite(&conn, &model_id, false).unwrap();
+        
+        // Should not be favorite again
+        let models = get_models_by_provider(&conn, &provider_id).unwrap();
+        assert_eq!(models.len(), 1);
+        assert!(!models[0].is_favorite);
+    }
+
+    #[test]
+    fn test_get_favorite_models_by_provider() {
+        let conn = create_test_db().unwrap();
+        
+        // Add a test provider
+        let provider_id = add_provider_with_id(&conn, "test-provider", "Test Provider", "https://api.test.com", "test_key", "test-api-key").unwrap();
+        
+        // Add multiple test models
+        let model1_id = add_model(&conn, &provider_id, "model-1").unwrap();
+        let _model2_id = add_model(&conn, &provider_id, "model-2").unwrap();
+        let model3_id = add_model(&conn, &provider_id, "model-3").unwrap();
+        
+        // Make model1 and model3 favorites
+        toggle_model_favorite(&conn, &model1_id, true).unwrap();
+        toggle_model_favorite(&conn, &model3_id, true).unwrap();
+        
+        // Get only favorite models
+        let favorite_models = get_favorite_models_by_provider(&conn, &provider_id).unwrap();
+        assert_eq!(favorite_models.len(), 2);
+        
+        // Should be sorted alphabetically
+        assert_eq!(favorite_models[0].name, "model-1");
+        assert_eq!(favorite_models[1].name, "model-3");
+        
+        // All should be favorites
+        assert!(favorite_models[0].is_favorite);
+        assert!(favorite_models[1].is_favorite);
+    }
+
+    #[test]
+    fn test_model_sorting_with_favorites() {
+        let conn = create_test_db().unwrap();
+        
+        // Add a test provider
+        let provider_id = add_provider_with_id(&conn, "test-provider", "Test Provider", "https://api.test.com", "test_key", "test-api-key").unwrap();
+        
+        // Add models in non-alphabetical order
+        let model_z_id = add_model(&conn, &provider_id, "z-model").unwrap();
+        let _model_a_id = add_model(&conn, &provider_id, "a-model").unwrap();
+        let model_m_id = add_model(&conn, &provider_id, "m-model").unwrap();
+        
+        // Make model_z and model_m favorites
+        toggle_model_favorite(&conn, &model_z_id, true).unwrap();
+        toggle_model_favorite(&conn, &model_m_id, true).unwrap();
+        
+        // Get all models (should be sorted: favorites first, then alphabetically)
+        let models = get_models_by_provider(&conn, &provider_id).unwrap();
+        assert_eq!(models.len(), 3);
+        
+        // First two should be favorites, sorted alphabetically
+        assert_eq!(models[0].name, "m-model");
+        assert!(models[0].is_favorite);
+        assert_eq!(models[1].name, "z-model");
+        assert!(models[1].is_favorite);
+        
+        // Last should be non-favorite
+        assert_eq!(models[2].name, "a-model");
+        assert!(!models[2].is_favorite);
+    }
+
+    #[test]
+    fn test_toggle_favorite_invalid_model() {
+        let conn = create_test_db().unwrap();
+        
+        // Try to toggle favorite for non-existent model
+        let result = toggle_model_favorite(&conn, "invalid-model-id", true);
+        
+        // Should not return an error (SQLite UPDATE with no matching rows succeeds)
+        assert!(result.is_ok());
+    }
+}

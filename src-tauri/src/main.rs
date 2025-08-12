@@ -100,6 +100,12 @@ struct VerifyModelRequest {
     model_name: String,
 }
 
+#[derive(Deserialize)]
+struct ToggleFavoriteRequest {
+    model_id: String,
+    is_favorite: bool,
+}
+
 // Get the application data directory
 fn get_app_data_dir() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not find home directory".to_string())?;
@@ -611,6 +617,16 @@ async fn send_chat_request(
 }
 
 #[tauri::command]
+async fn toggle_model_favorite(
+    app_state: State<'_, AppState>,
+    request: ToggleFavoriteRequest,
+) -> Result<(), String> {
+    let conn = app_state.db_conn.lock().map_err(|e| e.to_string())?;
+    db::toggle_model_favorite(&conn, &request.model_id, request.is_favorite)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn verify_model(
     app_state: State<'_, AppState>,
     request: VerifyModelRequest,
@@ -709,6 +725,7 @@ async fn main() {
             add_model,
             delete_model,
             fetch_models_from_provider,
+            toggle_model_favorite,
             
             // Chat session commands
             get_chat_sessions,

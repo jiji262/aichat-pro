@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
+import FavoriteButton from "../components/FavoriteButton.jsx";
 
 export default function ProvidersPage() {
   const { t } = useI18n();
@@ -468,6 +469,22 @@ export default function ProvidersPage() {
       console.log('Verify summary:', { total, success: successCount, failed: failedCount });
     }
   }
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = (modelId, isFavorite) => {
+    // Update the models map to reflect the new favorite status
+    setModelsMap(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(providerId => {
+        updated[providerId] = updated[providerId].map(model => 
+          model.id === modelId 
+            ? { ...model, is_favorite: isFavorite }
+            : model
+        );
+      });
+      return updated;
+    });
+  };
   
   function renderProviderCard(provider) {
     const models = modelsMap[provider.id] || [];
@@ -656,6 +673,11 @@ export default function ProvidersPage() {
                       </span>
                     )}
                     
+                    <FavoriteButton 
+                      model={model} 
+                      onToggle={handleFavoriteToggle}
+                    />
+
                     <button
                       onClick={() => handleVerifyModel(provider.id, model)}
                       className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50"
