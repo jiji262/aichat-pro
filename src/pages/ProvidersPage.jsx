@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
 import FavoriteButton from "../components/FavoriteButton.jsx";
+import { Button } from "@/components/retroui/Button";
+import { Card } from "@/components/retroui/Card";
+import { Text } from "@/components/retroui/Text";
+import { Input } from "@/components/retroui/Input";
+import { Select } from "@/components/retroui/Select";
 
 export default function ProvidersPage() {
   const { t } = useI18n();
@@ -501,60 +506,64 @@ export default function ProvidersPage() {
     const hiddenCount = Math.max(0, models.length - MAX_VISIBLE_MODELS);
 
     return (
-      <div key={provider.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-
+      <Card key={provider.id} className="p-6 shadow-retro-md">
         <div className="flex justify-between items-start mb-4">
           {isEditing ? (
-            <input
+            <Input
               type="text"
               value={editForm.name}
               onChange={(e) => handleEditFormChange(provider.id, 'name', e.target.value)}
-              className="text-xl font-semibold bg-transparent border-b border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500"
+              className="text-xl font-head font-semibold border-b-2 border-l-0 border-r-0 border-t-0 shadow-none bg-transparent"
               placeholder="Provider Name"
             />
           ) : (
-            <h2 className="text-xl font-semibold">{provider.name}</h2>
+            <Text as="h2" className="text-xl font-head font-semibold">{provider.name}</Text>
           )}
           
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex gap-2">
             {isEditing ? (
               <>
-                <button
+                <Button
                   onClick={() => handleUpdateProvider(provider.id)}
-                  className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800"
+                  variant="default"
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {t('common.save')}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setEditingProviderId(null)}
-                  className="px-3 py-1 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                  variant="outline"
+                  size="sm"
                 >
                   {t('common.cancel')}
-                </button>
+                </Button>
               </>
             ) : (
               <>
-                <button
+                <Button
                   onClick={() => {
                     console.log("Edit button clicked for provider:", provider.id);
                     toggleEditProvider(provider.id);
                   }}
-                  className="px-3 py-1 bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-800"
+                  variant="outline"
+                  size="sm"
                 >
                   {t('common.edit')}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => {
                     console.log("=== DELETE BUTTON CLICKED ===");
                     console.log("Provider ID:", provider.id);
                     console.log("Provider object:", provider);
                     setDeleteConfirm({ show: true, provider: provider });
                   }}
-                  className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                  variant="destructive"
+                  size="sm"
                 >
                   🗑️ {t('common.delete')}
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -711,7 +720,7 @@ export default function ProvidersPage() {
           )}
           </>
         )}
-      </div>
+      </Card>
     );
   }
   
@@ -730,41 +739,42 @@ export default function ProvidersPage() {
   return (
     <div className="flex flex-col h-screen">
       {/* 固定顶部标题栏 */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 p-6 shadow-md">
+      <Card className="sticky top-0 z-10 border-b-2 border-l-0 border-r-0 border-t-0 shadow-retro-md p-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t('providers.title')}</h1>
-          <button
+          <Text as="h1" className="text-2xl font-head font-bold">{t('providers.title')}</Text>
+          <Button
             onClick={openAddForm}
-            className="btn btn-primary flex items-center justify-center min-w-[120px]"
+            variant="default"
+            className="min-w-[140px]"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             {t('providers.addProvider')}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
       
       {/* 可滚动内容区域 */}
       <div ref={scrollableContainerRef} className="flex-1 overflow-y-auto p-6 pt-2">
         
         {/* Providers List */}
         {isLoading && providers.length === 0 ? (
-          <div className="text-center py-4">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
+          <div className="text-center py-8">
+            <div className="loading-spinner mx-auto"></div>
           </div>
         ) : providers.length === 0 ? (
           <div className="text-center p-8">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('providers.noProviders')}</p>
-            <button
+            <Text className="text-muted-foreground mb-6">{t('providers.noProviders')}</Text>
+            <Button
               onClick={openAddForm}
-              className="btn btn-primary"
+              variant="default"
             >
               {t('providers.addFirstProvider')}
-            </button>
+            </Button>
           </div>
         ) : (
-          <div>
+          <div className="space-y-6">
             {providers.map(renderProviderCard)}
           </div>
         )}

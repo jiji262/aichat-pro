@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
+import { Button } from "@/components/retroui/Button";
+import { Card } from "@/components/retroui/Card";
+import { Input } from "@/components/retroui/Input";
+import { Text } from "@/components/retroui/Text";
 
 // Sidebar component for navigation
 function Sidebar() {
@@ -200,205 +204,212 @@ function Sidebar() {
   };
 
   return (
-    <div className="w-64 h-screen bg-gray-100 dark:bg-gray-800 p-4 flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-lg font-bold text-gray-800 dark:text-white">AI Chat</h1>
+    <div className="w-64 h-screen bg-background border-r-2 border-border p-4 flex flex-col">
+      <div className="mb-6">
+        <Text as="h1" className="text-2xl font-head font-bold">AI Chat</Text>
       </div>
 
       {/* New Chat Button */}
-      <button
+      <Button
         onClick={createNewChat}
-        className="btn btn-primary flex items-center mb-4"
+        variant="default"
+        className="w-full mb-6 justify-center"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
         {t('chat.newChat')}
-      </button>
+      </Button>
       
       {/* Chat Sessions List */}
-      <div className="overflow-y-auto flex-grow mb-4">
-        <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">{t('nav.chat')}</h2>
+      <div className="overflow-y-auto flex-grow mb-6">
+        <Text as="h2" className="text-sm font-head font-semibold mb-3 text-muted-foreground">{t('nav.chat')}</Text>
         {isLoading ? (
           <div className="text-center py-4">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
+            <div className="loading-spinner mx-auto"></div>
           </div>
         ) : (
-          <ul className="space-y-1">
+          <div className="space-y-2">
             {chatSessions.map((session) => (
-              <li key={session.id}>
+              <div key={session.id}>
                 {editingSessionId === session.id ? (
-                  <div className="px-3 py-1 rounded-md bg-white dark:bg-gray-700 flex">
-                    <input
+                  <Card className="p-2 flex items-center">
+                    <Input
                       ref={editInputRef}
                       type="text"
                       value={editingSessionName}
                       onChange={(e) => setEditingSessionName(e.target.value)}
                       onKeyDown={handleKeyPress}
                       onBlur={saveSessionName}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm"
+                      className="flex-1 text-sm border-none shadow-none p-1"
                     />
-                    <button
+                    <Button
                       onClick={saveSessionName}
-                      className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 p-1 ml-1"
+                      variant="outline"
+                      size="icon"
+                      className="ml-2 h-6 w-6 text-green-600 hover:text-green-800"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
-                    </button>
-                  </div>
+                    </Button>
+                  </Card>
                 ) : (
-                  <div 
-                    className={`relative flex items-center ${
+                  <Card 
+                    className={`transition-all hover:shadow-retro-xs cursor-pointer ${
                       location.pathname === `/chat/${session.id}`
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                    } rounded-md`}
+                        ? "bg-primary text-primary-foreground shadow-retro-sm"
+                        : "hover:translate-y-0.5"
+                    }`}
                     onContextMenu={(e) => {
+                      e.preventDefault(); // 阻止默认的浏览器右键菜单
                       console.log("Right-click detected on session:", session.id);
                       handleContextMenu(e, session.id);
                     }}
                     onMouseDown={(e) => {
                       // 检测右键点击
                       if (e.button === 2) {
+                        e.preventDefault(); // 阻止默认的浏览器右键菜单
                         console.log("Mouse right button detected on session:", session.id);
                         handleContextMenu(e, session.id);
                       }
                     }}
                   >
-                    <NavLink
-                      to={`/chat/${session.id}`}
-                      className="block px-3 py-2 rounded-md text-sm flex-1"
-                    >
-                      {session.name}
-                    </NavLink>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        startEditing(session);
-                      }}
-                      className="px-2 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                      </svg>
-                    </button>
-                  </div>
+                    <div className="flex items-center">
+                      <NavLink
+                        to={`/chat/${session.id}`}
+                        className="block px-3 py-2 text-sm flex-1 font-sans"
+                      >
+                        {session.name}
+                      </NavLink>
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startEditing(session);
+                        }}
+                        variant="outline"
+                        size="icon"
+                        className="mr-2 h-6 w-6 border-none shadow-none hover:bg-transparent"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </Card>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
 
       {/* Context Menu */}
       {contextMenu.visible && (
-        <div 
-          className="fixed bg-white dark:bg-gray-800 shadow-lg rounded-md py-1 z-50 border border-gray-200 dark:border-gray-700 context-menu"
+        <Card 
+          className="fixed z-50 context-menu shadow-retro-lg"
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button 
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-            onClick={() => {
-              const session = chatSessions.find(s => s.id === contextMenu.sessionId);
-              if (session) {
-                startEditing(session);
+          <div className="py-1">
+            <Button
+              variant="outline"
+              className="w-full justify-start text-sm border-none shadow-none hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                const session = chatSessions.find(s => s.id === contextMenu.sessionId);
+                if (session) {
+                  startEditing(session);
+                  setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
+                }
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              </svg>
+              {t('common.edit')}
+            </Button>
+            <Button
+              id="delete-session-button"
+              variant="destructive"
+              className="w-full justify-start text-sm"
+              onClick={() => {
+                const sessionId = contextMenu.sessionId;
+                console.log("=== SESSION DELETE BUTTON CLICKED ===");
+                console.log("Session ID:", sessionId);
+
+                // 关闭上下文菜单
                 setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
-              }
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-            </svg>
-            {t('common.edit')}
-          </button>
-          <button
-            id="delete-session-button"
-            onClick={() => {
-              const sessionId = contextMenu.sessionId;
-              console.log("=== SESSION DELETE BUTTON CLICKED ===");
-              console.log("Session ID:", sessionId);
 
-              // 关闭上下文菜单
-              setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
+                if (!sessionId) {
+                  console.error("Session ID is missing");
+                  console.log("错误：会话 ID 缺失");
+                  return;
+                }
 
-              if (!sessionId) {
-                console.error("Session ID is missing");
-                console.log("错误：会话 ID 缺失");
-                return;
-              }
+                // 找到会话对象
+                const session = chatSessions.find(s => s.id === sessionId);
+                if (!session) {
+                  console.error("Session not found");
+                  return;
+                }
 
-              // 找到会话对象
-              const session = chatSessions.find(s => s.id === sessionId);
-              if (!session) {
-                console.error("Session not found");
-                return;
-              }
-
-              console.log("Session object:", session);
-              // 显示确认对话框
-              setDeleteConfirm({ show: true, session: session });
-            }}
-            className="w-full text-left px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-            </svg>
-            {t('common.delete')}
-          </button>
-        </div>
+                console.log("Session object:", session);
+                // 显示确认对话框
+                setDeleteConfirm({ show: true, session: session });
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+              {t('common.delete')}
+            </Button>
+          </div>
+        </Card>
       )}
 
       {/* Navigation Links */}
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <nav className="space-y-1">
-          <NavLink
-            to="/providers"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md text-sm ${
-                isActive
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`
-            }
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
-            </svg>
-            {t('nav.providers')}
+      <div className="border-t-2 border-border pt-4">
+        <nav className="space-y-2">
+          <NavLink to="/providers">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "default" : "outline"}
+                className="w-full justify-start"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
+                </svg>
+                {t('nav.providers')}
+              </Button>
+            )}
           </NavLink>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md text-sm ${
-                isActive
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`
-            }
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {t('nav.settings')}
+          <NavLink to="/settings">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "default" : "outline"}
+                className="w-full justify-start"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {t('nav.settings')}
+              </Button>
+            )}
           </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md text-sm ${
-                isActive
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`
-            }
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-            </svg>
-            About
+          <NavLink to="/about">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "default" : "outline"}
+                className="w-full justify-start"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                About
+              </Button>
+            )}
           </NavLink>
         </nav>
       </div>
@@ -406,28 +417,29 @@ function Sidebar() {
       {/* Delete Confirmation Dialog */}
       {deleteConfirm.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">{t('providers.confirmDelete')}</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {t('providers.confirmDeleteProvider', { name: deleteConfirm.session?.name })}
-              <br />
-              <span className="text-red-500 text-sm">{t('providers.cannotUndo')}</span>
-            </p>
+          <Card className="p-6 max-w-md w-full mx-4 shadow-retro-2xl">
+            <Text as="h3" className="text-lg font-head font-semibold mb-4">{t('providers.confirmDelete')}</Text>
+            <div className="mb-6">
+              <Text className="text-muted-foreground mb-2">
+                {t('providers.confirmDeleteProvider', { name: deleteConfirm.session?.name })}
+              </Text>
+              <Text className="text-destructive text-sm font-medium">{t('providers.cannotUndo')}</Text>
+            </div>
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={cancelDeleteSession}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+                variant="outline"
               >
                 {t('common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmDeleteSession}
-                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                variant="destructive"
               >
                 {t('common.confirm')}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>
@@ -437,7 +449,7 @@ function Sidebar() {
 // Main layout component
 export default function Layout() {
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="flex h-screen bg-background text-foreground font-sans">
       <Sidebar />
       <main className="flex-1 overflow-auto">
         <Outlet />

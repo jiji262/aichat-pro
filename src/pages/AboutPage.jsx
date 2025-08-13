@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Card } from "@/components/retroui/Card";
+import { Text } from "@/components/retroui/Text";
 
 export default function AboutPage() {
   const [appVersion, setAppVersion] = useState("1.0.0");
@@ -9,73 +11,124 @@ export default function AboutPage() {
   
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">About</h1>
+      <Text as="h1" className="text-2xl font-head font-bold mb-6">About</Text>
       
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-center mb-6">
+      <Card className="p-6 mb-6 shadow-retro-md">
+        <div className="flex items-center justify-center mb-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold">AI Chat</h2>
-            <p className="text-gray-600 dark:text-gray-400">Version {appVersion}</p>
+            <Text as="h2" className="text-3xl font-head font-bold mb-2">AI Chat</Text>
+            <Text className="text-muted-foreground">Version {appVersion}</Text>
           </div>
         </div>
         
-        <p className="text-gray-700 dark:text-gray-300 mb-6">
+        <Text className="mb-8 leading-relaxed">
           AI Chat is a cross-platform desktop client that provides a unified interface for multiple AI service providers. 
           It allows you to interact with various AI models from different providers in a single, consistent user interface.
-        </p>
+        </Text>
         
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2">Features</h3>
-          <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-            <li>Multiple AI provider support (OpenAI, Gemini, DeepSeek, Grok)</li>
-            <li>Local-first data storage for privacy</li>
-            <li>Custom assistants with specialized system prompts</li>
-            <li>Full markdown rendering with syntax highlighting</li>
-            <li>Light and dark themes</li>
-            <li>Cross-platform (Windows and macOS)</li>
-          </ul>
+        <div className="mb-8">
+          <Text as="h3" className="text-lg font-head font-medium mb-4">Features</Text>
+          <Card className="p-4 bg-accent/20 border-accent">
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Multiple AI provider support (OpenAI, Gemini, DeepSeek, Grok)</Text>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Local-first data storage for privacy</Text>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Custom assistants with specialized system prompts</Text>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Full markdown rendering with syntax highlighting</Text>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Light and dark themes with RetroUI styling</Text>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <Text>Cross-platform (Windows and macOS)</Text>
+              </li>
+            </ul>
+          </Card>
         </div>
         
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2">Built With</h3>
-          <ul className="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); openLink("https://tauri.app") }}
-                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                Tauri
-              </a> - A framework for building lightweight desktop applications
-            </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); openLink("https://react.dev") }}
-                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                React
-              </a> - A JavaScript library for building user interfaces
-            </li>
-            <li>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); openLink("https://www.rust-lang.org") }}
-                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                Rust
-              </a> - A language empowering everyone to build reliable and efficient software
-            </li>
-          </ul>
+        <div className="mb-8">
+          <Text as="h3" className="text-lg font-head font-medium mb-4">Built With</Text>
+          <Card className="p-4 bg-secondary/10 border-secondary">
+            <ul className="space-y-3">
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <div>
+                  <Text 
+                    as="a" 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); openLink("https://tauri.app") }}
+                    className="text-primary hover:text-primary-hover font-medium underline decoration-2 underline-offset-2"
+                  >
+                    Tauri
+                  </Text>
+                  <Text> - A framework for building lightweight desktop applications</Text>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <div>
+                  <Text 
+                    as="a" 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); openLink("https://react.dev") }}
+                    className="text-primary hover:text-primary-hover font-medium underline decoration-2 underline-offset-2"
+                  >
+                    React
+                  </Text>
+                  <Text> - A JavaScript library for building user interfaces</Text>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <div>
+                  <Text 
+                    as="a" 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); openLink("https://www.rust-lang.org") }}
+                    className="text-primary hover:text-primary-hover font-medium underline decoration-2 underline-offset-2"
+                  >
+                    Rust
+                  </Text>
+                  <Text> - A language empowering everyone to build reliable and efficient software</Text>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <div>
+                  <Text 
+                    as="a" 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); openLink("https://retroui.dev") }}
+                    className="text-primary hover:text-primary-hover font-medium underline decoration-2 underline-offset-2"
+                  >
+                    RetroUI
+                  </Text>
+                  <Text> - A retro-styled UI component library for unique interfaces</Text>
+                </div>
+              </li>
+            </ul>
+          </Card>
         </div>
         
-        <div>
-          <h3 className="text-lg font-medium mb-2">License</h3>
-          <p className="text-gray-700 dark:text-gray-300">
+        <div className="border-t-2 border-border pt-6">
+          <Text as="h3" className="text-lg font-head font-medium mb-3">License</Text>
+          <Text className="text-muted-foreground">
             AI Chat is open source software licensed under the MIT license.
-          </p>
+          </Text>
         </div>
-      </div>
+      </Card>
     </div>
   );
 } 

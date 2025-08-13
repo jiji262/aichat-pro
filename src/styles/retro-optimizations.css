@@ -1,0 +1,68 @@
+/* RetroUI Performance Optimizations */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .retro-card,
+  .retro-input,
+  .retro-select,
+  .retro-hover {
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .loading-spinner {
+    animation: none !important;
+  }
+  
+  .animate-slide-in,
+  .animate-retro-bounce,
+  .animate-retro-pulse {
+    animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: #000;
+    --primary: #ffff00;
+    --secondary: #000;
+    --destructive: #ff0000;
+  }
+  
+  .dark {
+    --border: #fff;
+    --primary: #ffff00;
+    --secondary: #fff;
+    --destructive: #ff0000;
+  }
+}
+
+/* Print styles */
+@media print {
+  .btn,
+  .retro-card,
+  .retro-input {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .loading-spinner {
+    display: none !important;
+  }
+}
+
+/* Focus visible for better accessibility */
+.btn:focus-visible,
+.retro-input:focus-visible,
+.retro-select:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Ensure text remains readable during font loading */
+.font-head,
+.font-sans {
+  font-display: swap;
+}

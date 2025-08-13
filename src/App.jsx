@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { RouterProvider, createHashRouter } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { I18nProvider } from "./i18n/index.jsx";
-import "./styles.css";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import "./index.css";
 
 // Import pages
 import Layout from "./components/Layout";
@@ -91,9 +92,11 @@ function App() {
   }, [theme]);
 
   return (
-    <I18nProvider>
-      <RouterProvider router={router} />
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 

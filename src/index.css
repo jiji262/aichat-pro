@@ -1,6 +1,85 @@
+/* Import Google Fonts for RetroUI with optimized loading */
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;600;700&display=swap&subset=latin');
+
+/* Import RetroUI optimizations */
+@import './styles/retro-optimizations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* RetroUI Theme Variables */
+@theme {
+  --font-head: 'Archivo Black', sans-serif;
+  --font-sans: 'Space Grotesk', sans-serif;
+  --shadow-xs: 1px 1px 0 0 var(--border);
+  --shadow-sm: 2px 2px 0 0 var(--border);
+  --shadow: 3px 3px 0 0 var(--border);
+  --shadow-md: 4px 4px 0 0 var(--border);
+  --shadow-lg: 6px 6px 0 0 var(--border);
+  --shadow-xl: 10px 10px 0 1px var(--border);
+  --shadow-2xl: 16px 16px 0 1px var(--border);
+ 
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+}
+
+:root {
+  --background: #fff;
+  --foreground: #000;
+  --card: #fff;
+  --card-foreground: #000;
+  --primary: #ffdb33;
+  --primary-hover: #ffcc00;
+  --primary-foreground: #000;
+  --secondary: #000;
+  --secondary-foreground: #fff;
+  --muted: #aeaeae;
+  --muted-foreground: #5a5a5a;
+  --accent: #fae583;
+  --accent-foreground: #000;
+  --destructive: #e63946;
+  --destructive-foreground: #fff;
+  --border: #000;
+  --input: #fff;
+  --ring: #ffdb33;
+  --radius: 0.375rem;
+}
+
+.dark {
+  --background: #1a1a1a;
+  --foreground: #f5f5f5;
+  --card: #242424;
+  --card-foreground: #f5f5f5;
+  --primary: #ffdb33;
+  --primary-hover: #ffcc00;
+  --primary-foreground: #000;
+  --secondary: #3a3a3a;
+  --secondary-foreground: #f5f5f5;
+  --muted: #3f3f46;
+  --muted-foreground: #a0a0a0;
+  --accent: #fae583;
+  --accent-foreground: #000;
+  --destructive: #e63946;
+  --destructive-foreground: #fff;
+  --border: #3a3a3a;
+  --input: #242424;
+  --ring: #ffdb33;
+}
 
 @layer base {
   html, body, #root {
@@ -10,54 +89,146 @@
   }
 
   body {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom scrollbar styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-head);
+  }
+
+  /* Custom scrollbar styles with RetroUI theme */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-800;
+    @apply bg-muted;
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+    @apply bg-border rounded-none;
+    border: 1px solid var(--border);
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-500;
+    @apply bg-muted-foreground;
   }
 }
 
 @layer components {
-  /* Button styles */
+  /* RetroUI Button styles */
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+    @apply font-head transition-all outline-none cursor-pointer duration-200 font-medium flex items-center justify-center;
+    @apply shadow-retro-md hover:shadow-none border-2 border-border;
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover hover:translate-y-1;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500;
+    @apply bg-secondary text-secondary-foreground hover:translate-y-1;
   }
 
-  .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:translate-y-1;
   }
 
-  /* Loading spinner */
+  .btn-outline {
+    @apply bg-transparent hover:translate-y-1;
+  }
+
+  .btn-icon {
+    @apply p-2;
+  }
+
+  /* RetroUI Card styles */
+  .retro-card {
+    @apply border-2 border-border shadow-retro-md bg-card text-card-foreground;
+    @apply hover:shadow-retro-xs transition-all duration-200;
+  }
+
+  .retro-card-interactive {
+    @apply retro-card cursor-pointer hover:translate-y-0.5;
+  }
+
+  /* RetroUI Input styles */
+  .retro-input {
+    @apply border-2 border-border shadow-retro-sm bg-input px-3 py-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:shadow-none focus:translate-y-0.5;
+    @apply transition-all duration-200;
+  }
+
+  /* RetroUI Select styles */
+  .retro-select {
+    @apply border-2 border-border shadow-retro-sm bg-input;
+    @apply hover:shadow-retro-xs hover:translate-y-0.5;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:shadow-none;
+    @apply transition-all duration-200;
+  }
+
+  /* Loading spinner with RetroUI style */
   .loading-spinner {
-    @apply animate-spin rounded-full border-2 border-gray-300 border-t-blue-600;
+    @apply animate-spin border-2 border-border border-t-primary;
+    border-radius: 0;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* RetroUI Link styles */
+  .retro-link {
+    @apply text-primary hover:text-primary-hover underline decoration-2 underline-offset-2;
+    @apply transition-colors duration-200;
+  }
+
+  /* RetroUI Focus styles */
+  .retro-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* RetroUI Hover effects for interactive elements */
+  .retro-hover {
+    @apply hover:shadow-retro-xs hover:translate-y-0.5 transition-all duration-200;
+  }
+
+  /* Responsive RetroUI styles */
+  @media (max-width: 768px) {
+    .retro-card {
+      @apply shadow-retro-sm;
+    }
+    
+    .btn {
+      @apply shadow-retro-sm hover:shadow-retro-xs;
+    }
+    
+    .retro-input, .retro-select {
+      @apply shadow-retro-xs;
+    }
+    
+    /* Reduce shadow intensity on mobile for better performance */
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .retro-hover {
+      @apply hover:shadow-retro-sm hover:translate-y-0;
+    }
+    
+    .btn {
+      @apply hover:shadow-retro-sm hover:translate-y-0;
+    }
+    
+    .retro-card-interactive {
+      @apply hover:translate-y-0;
+    }
   }
 
   /* Screen reader only */
@@ -86,7 +257,7 @@
 }
 
 @layer utilities {
-  /* Animation utilities */
+  /* RetroUI Animation utilities */
   @keyframes slide-in {
     from {
       transform: translateX(100%);
@@ -98,12 +269,75 @@
     }
   }
 
+  @keyframes retro-bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0,0,0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+
+  @keyframes retro-pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--primary);
+    }
+    70% {
+      box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
+  }
+
+  .animate-retro-bounce {
+    animation: retro-bounce 1s ease-in-out;
+  }
+
+  .animate-retro-pulse {
+    animation: retro-pulse 2s infinite;
   }
 
   /* App container */
   .app-container {
     @apply h-full w-full overflow-hidden;
+  }
+
+  /* RetroUI utility classes */
+  .retro-shadow-inset {
+    box-shadow: inset 2px 2px 0 0 var(--border);
+  }
+
+  .retro-text-shadow {
+    text-shadow: 2px 2px 0 var(--border);
+  }
+
+  .retro-border-thick {
+    border-width: 3px;
+  }
+
+  .retro-border-chunky {
+    border-width: 4px;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 } 

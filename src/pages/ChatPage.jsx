@@ -3,6 +3,11 @@ import { useParams } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n/index.jsx";
 import Message from "../components/Message";
+// Import RetroUI components
+import { Button } from "@/components/retroui/Button";
+import { Card } from "@/components/retroui/Card";
+import { Text } from "@/components/retroui/Text";
+import { Select } from "@/components/retroui/Select";
 
 // 简单的防抖函数
 function debounce(fn, delay) {
@@ -523,49 +528,70 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
+      <Card className="border-b-2 border-l-0 border-r-0 border-t-0 shadow-none p-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">
+          <Text as="h1" className="text-xl font-head font-semibold">
             {chatSession ? chatSession.name : "Select a chat"}
-          </h1>
+          </Text>
           
           {/* Model selector */}
-          <div className="flex space-x-2">
-            <select
-              value={selectedProviderId}
-              onChange={(e) => setSelectedProviderId(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm"
-            >
-              {providers.length > 0 ? (
-                providers.map((provider) => (
-                  <option key={provider.id} value={provider.id}>
-                    {provider.name}
-                  </option>
-                ))
-              ) : (
-                <option value="">{t('chat.noProviders')}</option>
-              )}
-            </select>
+          <div className="flex space-x-3">
+            <div className="w-48">
+              <Select.Root value={selectedProviderId} onValueChange={setSelectedProviderId}>
+                <Select.Trigger className="w-full shadow-retro-md hover:shadow-retro-sm hover:translate-y-0.5 transition-all duration-200">
+                  <Select.Value placeholder={providers.length > 0 ? "Select provider" : t('chat.noProviders')} />
+                </Select.Trigger>
+                <Select.Content className="shadow-retro-lg border-2 border-border">
+                  {providers.length > 0 ? (
+                    providers.map((provider) => (
+                      <Select.Item 
+                        key={provider.id} 
+                        value={provider.id}
+                        className="hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                      >
+                        {provider.name}
+                      </Select.Item>
+                    ))
+                  ) : (
+                    <Select.Item value="no-providers" disabled className="text-muted-foreground">
+                      {t('chat.noProviders')}
+                    </Select.Item>
+                  )}
+                </Select.Content>
+              </Select.Root>
+            </div>
 
-            <select
-              value={selectedModelId}
-              onChange={(e) => setSelectedModelId(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm"
-              disabled={models.length === 0}
-            >
-              {models.length > 0 ? (
-                models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))
-              ) : (
-                <option value="">No favorite models - Go to Providers page to add favorites</option>
-              )}
-            </select>
+            <div className="w-64">
+              <Select.Root 
+                value={selectedModelId} 
+                onValueChange={setSelectedModelId} 
+                disabled={models.length === 0}
+              >
+                <Select.Trigger className="w-full shadow-retro-md hover:shadow-retro-sm hover:translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Select.Value placeholder={models.length > 0 ? "Select model" : "No favorite models - Go to Providers page to add favorites"} />
+                </Select.Trigger>
+                <Select.Content className="shadow-retro-lg border-2 border-border">
+                  {models.length > 0 ? (
+                    models.map((model) => (
+                      <Select.Item 
+                        key={model.id} 
+                        value={model.id}
+                        className="hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                      >
+                        {model.name}
+                      </Select.Item>
+                    ))
+                  ) : (
+                    <Select.Item value="no-models" disabled className="text-muted-foreground">
+                      No favorite models - Go to Providers page to add favorites
+                    </Select.Item>
+                  )}
+                </Select.Content>
+              </Select.Root>
+            </div>
           </div>
         </div>
-      </header>
+      </Card>
       
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
@@ -574,7 +600,7 @@ export default function ChatPage() {
             {/* Loading state */}
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                <div className="loading-spinner"></div>
               </div>
             ) : (
               <>
@@ -583,11 +609,11 @@ export default function ChatPage() {
                 
                 {/* Empty state */}
                 {messages.length === 0 && !streamingMessage && (
-                  <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mb-3">
+                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-16 h-16 mb-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                     </svg>
-                    <p className="text-lg">No messages yet</p>
+                    <p className="text-lg font-head font-semibold mb-2">No messages yet</p>
                     <p className="text-sm">Start the conversation by sending a message below</p>
                   </div>
                 )}
@@ -598,11 +624,11 @@ export default function ChatPage() {
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mb-3">
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-16 h-16 mb-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
-            <p className="text-lg">No chat selected</p>
+            <p className="text-lg font-head font-semibold mb-2">No chat selected</p>
             <p className="text-sm">Select a chat from the sidebar or create a new one</p>
           </div>
         )}
@@ -610,19 +636,19 @@ export default function ChatPage() {
       
       {/* Input area */}
       {sessionId && (
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="border-t-2 border-l-0 border-r-0 border-b-0 shadow-none p-4">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex">
-              <div className="flex-1 mr-2">
+            <div className="flex gap-3">
+              <div className="flex-1">
                 <textarea
                   ref={textareaRef}
                   value={userInput}
                   onChange={handleInputChange}
                   placeholder={t('chat.typeMessage')}
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+                  className="resize-none w-full p-3 border-2 border-black"
                   style={{ 
                     height: inputHeight, 
-                    minHeight: `${minInputHeight}px`, // 设置最小高度
+                    minHeight: `${minInputHeight}px`,
                     overflow: userInput.length > 100 ? 'auto' : 'hidden' 
                   }}
                   rows="1"
@@ -636,29 +662,28 @@ export default function ChatPage() {
               </div>
               <button
                 type="submit"
-                className="btn btn-primary btn-icon"
                 disabled={(!userInput.trim() && !isGenerating && !streamingMessage && !isTypingResponse)}
                 title={(isGenerating || streamingMessage || isTypingResponse) ? t('chat.stopGeneration') || "Stop generation" : t('chat.send') || "Send"}
                 onClick={(e) => {
-                  // 直接在点击事件中处理，避免表单提交可能的延迟
                   e.preventDefault();
                   handleSubmit(e);
                 }}
+                className="h-12 w-12 p-2 border-2 border-black bg-yellow-400 hover:bg-yellow-500"
               >
                 {(isGenerating || streamingMessage || isTypingResponse) ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0721.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 )}
               </button>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+            <p className="text-xs text-gray-500 mt-2 text-right">
               Press Shift+Enter for a new line, Enter to send
-            </div>
+            </p>
           </form>
         </div>
       )}
