@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import TypeWriter from "./TypeWriter";
+import { useI18n } from "../i18n";
 
 // Component for code blocks in markdown
 const CodeBlock = ({ language, children }) => {
@@ -23,6 +24,7 @@ export default function Message({ message, isLoading = false, isNew = false, sto
   const [copied, setCopied] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
   const messageRef = useRef(null);
+  const { t } = useI18n();
   
   // 确保content始终是字符串
   const safeContent = typeof content === 'string' ? content : String(content || '');
@@ -92,7 +94,7 @@ export default function Message({ message, isLoading = false, isNew = false, sto
           {/* Message content */}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-              {isUser ? "You" : "AI Assistant"}
+              {isUser ? t('chat.you') : t('chat.aiAssistant')}
             </div>
             
             {/* Markdown content */}
@@ -131,7 +133,7 @@ export default function Message({ message, isLoading = false, isNew = false, sto
               <div className="mt-2">
                 <details className="text-sm">
                   <summary className="text-gray-600 dark:text-gray-400 cursor-pointer">
-                    Show thinking process
+                    {t('chat.showThinking')}
                   </summary>
                   <div className="mt-2 pl-4 border-l-2 border-gray-300 dark:border-gray-600 prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown>{typeof reasoning === 'string' ? reasoning : String(reasoning || '')}</ReactMarkdown>
@@ -147,7 +149,7 @@ export default function Message({ message, isLoading = false, isNew = false, sto
               <button
                 onClick={copyToClipboard}
                 style={{ backgroundColor: '#f3f4f6', color: '#6b7280', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="Copy to clipboard"
+                title={t('chat.copyToClipboard')}
               >
                 {copied ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

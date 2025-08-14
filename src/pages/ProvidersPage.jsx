@@ -514,7 +514,7 @@ export default function ProvidersPage() {
               value={editForm.name}
               onChange={(e) => handleEditFormChange(provider.id, 'name', e.target.value)}
               className="text-xl font-head font-semibold border-b-2 border-l-0 border-r-0 border-t-0 shadow-none bg-transparent"
-              placeholder="Provider Name"
+              placeholder={t('providers.providerNamePlaceholder')}
             />
           ) : (
             <Text as="h2" className="text-xl font-head font-semibold">{provider.name}</Text>
@@ -637,7 +637,7 @@ export default function ProvidersPage() {
         ) : models.length === 0 ? (
           <div className="text-center p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
             <p className="text-gray-500 dark:text-gray-400 mb-2">{t('chat.noModels')}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Add models manually or fetch them from the provider's API</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{t('providers.addModelsHelp')}</p>
             <div className="flex justify-center space-x-2">
               <button
                 onClick={() => showAddModelDialog(provider.id)}
@@ -817,7 +817,7 @@ export default function ProvidersPage() {
               <button
                 onClick={cancelForm}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
-                aria-label="Close"
+                aria-label={t('common.close')}
               >
                 ✕
               </button>
@@ -910,7 +910,7 @@ export default function ProvidersPage() {
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder={`e.g., My ${formType === "custom" ? "Custom" : formType.charAt(0).toUpperCase() + formType.slice(1)} Provider`}
+                  placeholder={t('providers.providerExamplePlaceholder', { type: formType === "custom" ? "Custom" : formType.charAt(0).toUpperCase() + formType.slice(1) })}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
@@ -924,7 +924,7 @@ export default function ProvidersPage() {
                   type="url"
                   value={formApiUrl}
                   onChange={(e) => setFormApiUrl(e.target.value)}
-                  placeholder="e.g., https://api.example.com"
+                  placeholder="https://api.example.com"
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
@@ -938,7 +938,7 @@ export default function ProvidersPage() {
                   type="password"
                   value={formApiKey}
                   onChange={(e) => setFormApiKey(e.target.value)}
-                  placeholder="Enter API key"
+                  placeholder={t('providers.apiKeyPlaceholder')}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useI18n } from "../i18n";
 
 export default function FavoriteButton({ model, onToggle }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isFavorite, setIsFavorite] = useState(model.is_favorite);
+  const { t } = useI18n();
 
   const handleToggle = async () => {
     if (isLoading) return;
@@ -33,7 +35,7 @@ export default function FavoriteButton({ model, onToggle }) {
       setIsFavorite(isFavorite);
       
       // Show error message (you might want to use a toast notification instead)
-      alert(`Failed to ${newFavoriteStatus ? 'add to' : 'remove from'} favorites: ${error}`);
+      alert(t('favorites.failedError', { error }));
     } finally {
       setIsLoading(false);
     }
@@ -53,15 +55,15 @@ export default function FavoriteButton({ model, onToggle }) {
       `}
       title={
         isLoading 
-          ? "Updating..." 
+          ? t('favorites.updating') 
           : isFavorite 
-            ? "Remove from favorites" 
-            : "Add to favorites"
+            ? t('favorites.removeFromFavorites') 
+            : t('favorites.addToFavorites')
       }
       aria-label={
         isFavorite 
-          ? "Remove from favorites" 
-          : "Add to favorites"
+          ? t('favorites.removeFromFavorites') 
+          : t('favorites.addToFavorites')
       }
     >
       {isLoading ? (

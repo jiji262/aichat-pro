@@ -1,17 +1,21 @@
-/* Import Google Fonts for RetroUI with optimized loading */
+/* Import Google Fonts with optimized loading */
 @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;600;700&display=swap&subset=latin');
 
-/* Import RetroUI optimizations */
+/* Import LxgwWenKai font for Chinese */
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css');
+
+/* Import UI optimizations */
 @import './styles/retro-optimizations.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* RetroUI Theme Variables */
+/* UI Theme Variables */
 @theme {
   --font-head: 'Archivo Black', sans-serif;
-  --font-sans: 'Space Grotesk', sans-serif;
+  --font-sans: 'Space Grotesk', 'LXGW WenKai Lite', sans-serif;
+  --font-chinese: 'LXGW WenKai Lite', sans-serif;
   --shadow-xs: 1px 1px 0 0 var(--border);
   --shadow-sm: 2px 2px 0 0 var(--border);
   --shadow: 3px 3px 0 0 var(--border);
@@ -339,5 +343,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Chinese language font styling */
+  :lang(zh) {
+    font-family: var(--font-chinese);
+  }
+  
+  /* Apply Chinese font to Chinese characters */
+  .font-chinese {
+    font-family: var(--font-chinese);
   }
 } 

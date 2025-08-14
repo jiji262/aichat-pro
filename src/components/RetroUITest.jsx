@@ -13,7 +13,7 @@ import {
   EmptyState
 } from "@/components/ui";
 
-export default function RetroUITest() {
+export default function ComponentTest() {
   const [inputValue, setInputValue] = useState("");
   const [textareaValue, setTextareaValue] = useState("");
   const [selectValue, setSelectValue] = useState(undefined);
@@ -23,7 +23,7 @@ export default function RetroUITest() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      <Text as="h1" className="text-3xl font-head font-bold">RetroUI Component Test</Text>
+      <Text as="h1" className="text-3xl font-head font-bold">UI Component Test</Text>
       
       {/* Typography Test */}
       <Card className="p-6">
@@ -33,7 +33,7 @@ export default function RetroUITest() {
           <Text as="h2">Heading 2 - Archivo Black</Text>
           <Text as="h3">Heading 3 - Archivo Black</Text>
           <Text as="p">Body text - Space Grotesk</Text>
-          <Text as="a" href="#" className="retro-link">Link with RetroUI styling</Text>
+          <Text as="a" href="#" className="retro-link">Styled Link</Text>
         </div>
       </Card>
 
@@ -127,7 +127,7 @@ export default function RetroUITest() {
           {showError && (
             <ErrorMessage
               title="Error Occurred"
-              message="This is an example error message with RetroUI styling."
+              message="This is an example error message."
               onRetry={() => setShowError(false)}
               retryText="Dismiss"
             />
@@ -136,7 +136,7 @@ export default function RetroUITest() {
           {showSuccess && (
             <SuccessMessage
               title="Success!"
-              message="This is an example success message with RetroUI styling."
+              message="This is an example success message."
               onDismiss={() => setShowSuccess(false)}
               dismissText="Great!"
             />
@@ -145,7 +145,7 @@ export default function RetroUITest() {
           {showWarning && (
             <WarningMessage
               title="Warning"
-              message="This is an example warning message with RetroUI styling."
+              message="This is an example warning message."
               onAction={() => setShowWarning(false)}
               actionText="Got it"
             />
@@ -158,7 +158,7 @@ export default function RetroUITest() {
         <Text as="h2" className="text-2xl font-head font-bold mb-4">Empty State</Text>
         <EmptyState
           title="No Items Found"
-          description="This is an example empty state with RetroUI styling. It shows when there's no data to display."
+          description="This is an example empty state. It shows when there's no data to display."
           action={() => alert("Action clicked!")}
           actionText="Add Item"
         />

@@ -29,8 +29,20 @@ const translations = {
     nav: {
       chat: "Chat",
       providers: "Providers",
-
       settings: "Settings",
+      about: "About",
+    },
+
+    // About
+    about: {
+      title: "About",
+      appName: "AI Chat",
+      version: "Version {appVersion}",
+      description: "AI Chat is a cross-platform desktop client that provides a unified interface for multiple AI service providers.",
+      features: "Features",
+      builtWith: "Built With",
+      license: "License",
+      licenseText: "AI Chat is open source software licensed under the MIT license.",
     },
 
     // Chat
@@ -41,6 +53,9 @@ const translations = {
       send: "Send",
       stopGeneration: "Stop Generation",
       you: "You",
+      aiAssistant: "AI Assistant",
+      showThinking: "Show thinking process",
+      copyToClipboard: "Copy to clipboard",
 
       selectProvider: "Select Provider",
       selectModel: "Select Model",
@@ -49,6 +64,7 @@ const translations = {
       noModels: "No models available for this provider.",
       noMessages: "No messages yet",
       noChatSelected: "No chat selected",
+      noFavoriteModels: "No favorite models - Go to Providers page to add favorites",
       startConversation: "Start the conversation by sending a message below",
       selectChatFromSidebar:
         "Select a chat from the sidebar or create a new one",
@@ -73,6 +89,7 @@ const translations = {
       fetchModels: "Fetch Models",
       addModel: "Add Model",
       verifyAll: "Verify All",
+      verify: "Verify",
       showMore: "Show {count} more",
       showLess: "Show less",
       verifySummary:
@@ -93,6 +110,10 @@ const translations = {
       addModelTitle: "Add Model",
       addModelPrompt: "Please enter the model name:",
       modelNamePlaceholder: "e.g., gpt-4o, claude-3-sonnet, gemini-pro",
+      providerNamePlaceholder: "Provider Name",
+      apiKeyPlaceholder: "Enter API key",
+      providerExamplePlaceholder: "e.g., My {type} Provider",
+      addModelsHelp: "Add models manually or fetch them from the provider's API",
       failedToSave: "Failed to save provider",
       failedToDelete: "Failed to delete provider",
       failedToFetch: "Failed to fetch models",
@@ -113,6 +134,14 @@ const translations = {
       themeSystem: "System",
       languageEn: "English",
       languageZh: "中文",
+    },
+
+    // Favorites
+    favorites: {
+      updating: "Updating...",
+      removeFromFavorites: "Remove from favorites",
+      addToFavorites: "Add to favorites",
+      failedError: "Failed to add/remove favorites: {error}",
     },
 
     // Messages
@@ -167,8 +196,20 @@ const translations = {
     nav: {
       chat: "聊天",
       providers: "提供商",
-
       settings: "设置",
+      about: "关于",
+    },
+
+    // About
+    about: {
+      title: "关于",
+      appName: "AI 聊天",
+      version: "版本 {appVersion}",
+      description: "AI 聊天是一个跨平台桌面客户端，为多个 AI 服务提供商提供统一界面。",
+      features: "功能特性",
+      builtWith: "技术栈",
+      license: "许可证",
+      licenseText: "AI 聊天是基于 MIT 许可证的开源软件。",
     },
 
     // Chat
@@ -179,6 +220,9 @@ const translations = {
       send: "发送",
       stopGeneration: "停止生成",
       you: "您",
+      aiAssistant: "AI 助手",
+      showThinking: "显示思考过程",
+      copyToClipboard: "复制到剪贴板",
 
       selectProvider: "选择提供商",
       selectModel: "选择模型",
@@ -187,6 +231,7 @@ const translations = {
       noModels: "此提供商没有可用的模型。",
       noMessages: "暂无消息",
       noChatSelected: "未选择聊天",
+      noFavoriteModels: "暂无收藏模型 - 请前往提供商页面添加收藏",
       startConversation: "在下方发送消息开始对话",
       selectChatFromSidebar: "从侧边栏选择聊天或创建新聊天",
       inputHint: "按 Shift+Enter 换行，Enter 发送",
@@ -210,6 +255,7 @@ const translations = {
       fetchModels: "获取模型",
       addModel: "添加模型",
       verifyAll: "验证全部",
+      verify: "验证",
       showMore: "展开另外 {count} 个",
       showLess: "收起",
       verifySummary: "验证完成：{success}/{total} 成功，{failed} 失败。",
@@ -228,6 +274,10 @@ const translations = {
       addModelTitle: "添加模型",
       addModelPrompt: "请输入要添加的模型名称：",
       modelNamePlaceholder: "例如：gpt-4o, claude-3-sonnet, gemini-pro",
+      providerNamePlaceholder: "提供商名称",
+      apiKeyPlaceholder: "输入 API 密钥",
+      providerExamplePlaceholder: "例如：我的 {type} 提供商",
+      addModelsHelp: "手动添加模型或从提供商的 API 获取模型",
       failedToSave: "保存提供商失败",
       failedToDelete: "删除提供商失败",
       failedToFetch: "获取模型失败",
@@ -248,6 +298,14 @@ const translations = {
       themeSystem: "跟随系统",
       languageEn: "English",
       languageZh: "中文",
+    },
+
+    // Favorites
+    favorites: {
+      updating: "更新中...",
+      removeFromFavorites: "从收藏中移除",
+      addToFavorites: "添加到收藏",
+      failedError: "添加/移除收藏失败：{error}",
     },
 
     // Messages
@@ -294,12 +352,14 @@ export function I18nProvider({ children }) {
           });
           if (savedLanguage && translations[savedLanguage]) {
             setLanguage(savedLanguage);
+            document.documentElement.lang = savedLanguage;
           }
         } else {
           // Use browser localStorage as fallback
           const savedLanguage = localStorage.getItem("aichat-language");
           if (savedLanguage && translations[savedLanguage]) {
             setLanguage(savedLanguage);
+            document.documentElement.lang = savedLanguage;
           }
         }
       } catch (error) {
@@ -316,6 +376,7 @@ export function I18nProvider({ children }) {
   const changeLanguage = async (newLanguage) => {
     if (translations[newLanguage]) {
       setLanguage(newLanguage);
+      document.documentElement.lang = newLanguage;
       try {
         if (window.__TAURI__) {
           await invoke("set_setting", { key: "language", value: newLanguage });
