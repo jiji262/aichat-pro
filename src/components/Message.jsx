@@ -35,7 +35,6 @@ export default function Message({ message, isLoading = false, isNew = false, sto
   // 监听停止标志变化
   useEffect(() => {
     if (stopRef && stopRef.current === true && useTypewriter) {
-      console.log("Message组件检测到停止标志");
       setShowFullContent(true);
       onTypingStatusChange(false);
     }
@@ -46,7 +45,6 @@ export default function Message({ message, isLoading = false, isNew = false, sto
     if (isNew && !isUser && !isLoading) {
       // 如果是新的AI回复，则设置为正在打字状态
       onTypingStatusChange(true);
-      console.log("设置打字状态为true");
     }
   }, [isNew, isUser, isLoading, onTypingStatusChange]);
 
@@ -59,7 +57,6 @@ export default function Message({ message, isLoading = false, isNew = false, sto
 
   // 打字效果完成后的回调
   const handleTypewriterComplete = () => {
-    console.log("打字效果完成");
     setShowFullContent(true);
     
     // 告知父组件打字效果已完成

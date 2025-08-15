@@ -190,7 +190,6 @@ export default function ProvidersPage() {
       cancelForm();
     } catch (error) {
       console.error("Failed to save provider:", error);
-      console.log(t('providers.failedToSave') + ": " + error);
     }
   }
   
@@ -216,7 +215,6 @@ export default function ProvidersPage() {
       setEditingProviderId(null);
     } catch (error) {
       console.error("Failed to update provider:", error);
-      console.log(t('providers.failedToSave') + ": " + error);
     }
   }
   
@@ -228,31 +226,17 @@ export default function ProvidersPage() {
       setScrollPosition(scrollableContainerRef.current.scrollTop);
     }
 
-    console.log("=== CONFIRMING DELETE ===");
-    console.log("Provider ID:", provider.id);
-
     try {
-      console.log("Step 1: User confirmed, calling backend API");
-      console.log("Calling invoke with:", { id: provider.id });
-
       // 调用后端删除API
       const result = await invoke("delete_provider", { id: provider.id });
-      console.log("Step 2: Backend API response:", result);
 
-      console.log("Step 3: Reloading providers list");
       // 重新加载providers列表
       await loadProviders();
-      console.log("Step 4: Providers list reloaded");
 
       // 关闭确认对话框
       setDeleteConfirm({ show: false, provider: null });
-
-      console.log("Step 5: Provider删除成功");
     } catch (error) {
-      console.error("=== DELETE ERROR ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Failed to delete provider:", error);
 
       // 关闭确认对话框
       setDeleteConfirm({ show: false, provider: null });
@@ -260,13 +244,10 @@ export default function ProvidersPage() {
   };
 
   const cancelDelete = () => {
-    console.log("Delete cancelled by user");
     setDeleteConfirm({ show: false, provider: null });
   };
   
   function showAddModelDialog(providerId) {
-    console.log("=== ADD MODEL BUTTON CLICKED ===");
-    console.log("Provider ID:", providerId);
     setAddModelDialog({ show: true, providerId: providerId, modelName: "" });
   }
 
@@ -274,32 +255,21 @@ export default function ProvidersPage() {
     const { providerId, modelName } = addModelDialog;
     if (!providerId || !modelName.trim()) return;
 
-    console.log("=== CONFIRMING ADD MODEL ===");
-    console.log("Provider ID:", providerId);
-    console.log("Model Name:", modelName);
-
     try {
-      console.log("Step 1: Calling backend API");
       await invoke("add_model", {
         model: {
           provider_id: providerId,
           name: modelName.trim()
         }
       });
-      console.log("Step 2: Model added successfully");
 
       // Reload models for this provider
-      console.log("Step 3: Reloading models");
       await loadModelsForProvider(providerId);
-      console.log("Step 4: Models reloaded");
 
       // Close dialog
       setAddModelDialog({ show: false, providerId: null, modelName: "" });
-      console.log("Step 5: Add model completed successfully");
     } catch (error) {
-      console.error("=== ADD MODEL ERROR ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
+      console.error("Failed to add model:", error);
 
       // Close dialog
       setAddModelDialog({ show: false, providerId: null, modelName: "" });
@@ -307,15 +277,10 @@ export default function ProvidersPage() {
   }
 
   function cancelAddModel() {
-    console.log("Add model cancelled by user");
     setAddModelDialog({ show: false, providerId: null, modelName: "" });
   }
   
   function showDeleteModelDialog(model, providerId) {
-    console.log("=== DELETE MODEL BUTTON CLICKED ===");
-    console.log("Model ID:", model.id);
-    console.log("Model Name:", model.name);
-    console.log("Provider ID:", providerId);
     setDeleteModelConfirm({ show: true, model: model, providerId: providerId });
   }
 
@@ -323,28 +288,16 @@ export default function ProvidersPage() {
     const { model, providerId } = deleteModelConfirm;
     if (!model || !providerId) return;
 
-    console.log("=== CONFIRMING DELETE MODEL ===");
-    console.log("Model ID:", model.id);
-    console.log("Model Name:", model.name);
-    console.log("Provider ID:", providerId);
-
     try {
-      console.log("Step 1: Calling backend API");
       await invoke("delete_model", { id: model.id });
-      console.log("Step 2: Model deleted successfully");
 
       // Reload models for this provider
-      console.log("Step 3: Reloading models");
       await loadModelsForProvider(providerId);
-      console.log("Step 4: Models reloaded");
 
       // Close dialog
       setDeleteModelConfirm({ show: false, model: null, providerId: null });
-      console.log("Step 5: Delete model completed successfully");
     } catch (error) {
-      console.error("=== DELETE MODEL ERROR ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
+      console.error("Failed to delete model:", error);
 
       // Close dialog
       setDeleteModelConfirm({ show: false, model: null, providerId: null });
@@ -352,7 +305,6 @@ export default function ProvidersPage() {
   }
 
   function cancelDeleteModel() {
-    console.log("Delete model cancelled by user");
     setDeleteModelConfirm({ show: false, model: null, providerId: null });
   }
   
@@ -380,10 +332,8 @@ export default function ProvidersPage() {
       // Reload models for this provider
       await loadModelsForProvider(providerId);
       
-      console.log(t('providers.fetchSuccess', { count: models.length }));
     } catch (error) {
       console.error("Failed to fetch models:", error);
-      console.log(t('providers.failedToFetch') + ": " + error);
     } finally {
       setLoadingModels(prev => ({ ...prev, [providerId]: false }));
     }
@@ -543,7 +493,6 @@ export default function ProvidersPage() {
               <>
                 <Button
                   onClick={() => {
-                    console.log("Edit button clicked for provider:", provider.id);
                     toggleEditProvider(provider.id);
                   }}
                   variant="outline"
@@ -554,9 +503,6 @@ export default function ProvidersPage() {
 
                 <Button
                   onClick={() => {
-                    console.log("=== DELETE BUTTON CLICKED ===");
-                    console.log("Provider ID:", provider.id);
-                    console.log("Provider object:", provider);
                     setDeleteConfirm({ show: true, provider: provider });
                   }}
                   variant="destructive"

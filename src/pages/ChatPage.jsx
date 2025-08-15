@@ -241,55 +241,14 @@ export default function ChatPage() {
   }, [userInput, minInputHeight]);
   
   // 停止生成的处理函数
-  const handleStopGeneration = () => {
-    console.log("停止生成被触发");
-    // 设置停止标志，这会被TypeWriter组件检测到
-    stopGenerationRef.current = true;
-    
-    // 如果正在显示thinking状态，直接移除
-    if (streamingMessage) {
+  const stopGeneration = async () => {
+    try {
+      setIsGenerating(false);
       setStreamingMessage(null);
+      setIsTypingResponse(false);
+    } catch (error) {
+      console.error("Failed to stop generation:", error);
     }
-    
-    // 重置打字效果状态 - 立即重置状态以更新UI
-    setIsTypingResponse(false);
-    
-    // 查找当前正在打字的消息，并标记为非新消息，这样就不会再显示打字效果
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.isNew ? { ...msg, isNew: false } : msg
-      )
-    );
-    
-    // 恢复用户输入
-    if (savedUserInput) {
-      setUserInput(savedUserInput);
-      
-      // 调整输入框高度以适应恢复的文本
-      if (textareaRef.current) {
-        setTimeout(() => {
-          const textarea = textareaRef.current;
-          textarea.style.height = "0";
-          const scrollHeight = textarea.scrollHeight;
-          setInputHeight(`${Math.min(200, Math.max(40, scrollHeight))}px`);
-        }, 0);
-      }
-    }
-    
-    setSavedUserInput("");
-    
-    // 重置生成状态
-    setIsGenerating(false);
-    
-    // 在下一个事件循环中再次检查，确保停止状态被正确处理
-    setTimeout(() => {
-      if (stopGenerationRef.current) {
-        console.log("确认停止生成");
-        // 强制重新渲染
-        setIsGenerating(false);
-        setIsTypingResponse(false);
-      }
-    }, 50);
   };
 
   // 清除输入框内容但保留高度
@@ -305,18 +264,15 @@ export default function ChatPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log("提交或停止按钮被点击", { isGenerating, streamingMessage, isTypingResponse });
-    
-    // 如果正在生成或显示thinking状态或打字效果，则点击按钮时停止生成
-    if (isGenerating || streamingMessage || isTypingResponse) {
-      console.log("触发停止生成");
-      handleStopGeneration();
+    if (!userInput.trim() && !isGenerating && !streamingMessage && !isTypingResponse) {
       return;
     }
-    
-    if (!userInput.trim() || !sessionId) return;
-    
-    // Check if provider and model are selected
+
+    if (isGenerating || streamingMessage || isTypingResponse) {
+      await stopGeneration();
+      return;
+    }
+
     if (!selectedProviderId || !selectedModelId) {
       const errorMessage = !selectedProviderId 
         ? "No provider selected. Please select a provider first."
@@ -670,7 +626,7 @@ export default function ChatPage() {
                   e.preventDefault();
                   handleSubmit(e);
                 }}
-                className="h-12 w-12"
+                className="h-12 w-12 flex-shrink-0 bg-primary text-primary-foreground border-2 border-border shadow-md hover:shadow-none hover:translate-y-1 hover:bg-primary-hover transition-all duration-200"
               >
                 {(isGenerating || streamingMessage || isTypingResponse) ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -678,7 +634,7 @@ export default function ChatPage() {
                   </svg>
                 ) : (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0721.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 )}
               </Button>

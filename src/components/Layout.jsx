@@ -47,31 +47,24 @@ function Sidebar() {
 
   // Handle click outside to close context menu
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      console.log("Click detected, checking if outside context menu");
-      
-      // 检查点击是否在上下文菜单内
-      const contextMenuElement = document.querySelector('.context-menu');
-      if (contextMenuElement && contextMenuElement.contains(event.target)) {
-        console.log("Click inside context menu, keeping it open");
-        return;
+    const handleClickOutside = (e) => {
+      // 检查点击是否在上下文菜单外部
+      if (contextMenu.visible && contextMenu.sessionId && !document.querySelector('.context-menu').contains(e.target)) {
+        // 检查是否点击了删除按钮
+        if (e.target.closest('#delete-session-button')) {
+          return;
+        }
+        
+        // 关闭上下文菜单
+        setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
       }
-      
-      // 检查点击是否在删除按钮上
-      if (event.target.closest('#delete-session-button')) {
-        console.log("Click on delete button, keeping context menu open");
-        return;
-      }
-      
-      console.log("Click outside context menu, closing it");
-      setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
     };
     
     document.addEventListener("click", handleClickOutside);
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, []);
+  }, [contextMenu.visible, contextMenu.sessionId]);
 
   // Create a new chat session
   const createNewChat = async () => {
@@ -142,17 +135,12 @@ function Sidebar() {
   const handleContextMenu = (e, sessionId) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Context menu requested for session:", sessionId);
-    
-    // 设置右键菜单位置和可见性
     setContextMenu({
       visible: true,
       x: e.clientX,
       y: e.clientY,
       sessionId
     });
-    
-    console.log("Context menu set to visible at", e.clientX, e.clientY);
   };
 
   // Confirm delete session
@@ -160,46 +148,23 @@ function Sidebar() {
     const session = deleteConfirm.session;
     if (!session) return;
 
-    console.log("=== CONFIRMING SESSION DELETE ===");
-    console.log("Session ID:", session.id);
-
     try {
-      console.log("Step 1: User confirmed, calling backend API");
-      console.log("Calling invoke with:", { id: session.id });
-
-      // 调用后端删除API
-      const result = await invoke("delete_chat_session", { id: session.id });
-      console.log("Step 2: Backend API response:", result);
-
-      console.log("Step 3: Reloading sessions list");
+      await invoke("delete_chat_session", { id: session.id });
+      
       // 重新加载会话列表
       await loadChatSessions();
-      console.log("Step 4: Sessions list reloaded");
-
-      // 如果当前正在查看的会话被删除，导航到主页
+      
+      // 如果删除的是当前会话，导航到主页
       if (location.pathname === `/chat/${session.id}`) {
-        console.log("Step 5: Navigating away from deleted session");
-        navigate("/");
+        navigate('/');
       }
-
-      // 关闭确认对话框
-      setDeleteConfirm({ show: false, session: null });
-
-      console.log("Step 6: 会话删除成功");
     } catch (error) {
-      console.error("=== SESSION DELETE ERROR ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-
-      // 关闭确认对话框
-      setDeleteConfirm({ show: false, session: null });
+      console.error("Failed to delete session:", error);
     }
   };
 
   // Cancel delete session
   const cancelDeleteSession = () => {
-    console.log("Session delete cancelled by user");
     setDeleteConfirm({ show: false, session: null });
   };
 
@@ -263,14 +228,12 @@ function Sidebar() {
                     }`}
                     onContextMenu={(e) => {
                       e.preventDefault(); // 阻止默认的浏览器右键菜单
-                      console.log("Right-click detected on session:", session.id);
                       handleContextMenu(e, session.id);
                     }}
                     onMouseDown={(e) => {
                       // 检测右键点击
                       if (e.button === 2) {
                         e.preventDefault(); // 阻止默认的浏览器右键菜单
-                        console.log("Mouse right button detected on session:", session.id);
                         handleContextMenu(e, session.id);
                       }
                     }}
@@ -335,15 +298,10 @@ function Sidebar() {
               className="w-full justify-start text-sm"
               onClick={() => {
                 const sessionId = contextMenu.sessionId;
-                console.log("=== SESSION DELETE BUTTON CLICKED ===");
-                console.log("Session ID:", sessionId);
-
-                // 关闭上下文菜单
                 setContextMenu({ visible: false, x: 0, y: 0, sessionId: null });
 
                 if (!sessionId) {
                   console.error("Session ID is missing");
-                  console.log("错误：会话 ID 缺失");
                   return;
                 }
 
@@ -354,8 +312,6 @@ function Sidebar() {
                   return;
                 }
 
-                console.log("Session object:", session);
-                // 显示确认对话框
                 setDeleteConfirm({ show: true, session: session });
               }}
             >

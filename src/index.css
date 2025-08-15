@@ -150,6 +150,31 @@
     @apply p-2;
   }
 
+  /* RetroUI Button component styles */
+  .retro-btn {
+    @apply font-head transition-all outline-none cursor-pointer duration-200 font-medium flex items-center justify-center;
+  }
+
+  .retro-btn[data-variant="default"] {
+    @apply shadow-md hover:shadow-none bg-primary text-primary-foreground border-2 border-border transition-all hover:translate-y-1 hover:bg-primary-hover;
+  }
+
+  .retro-btn[data-variant="secondary"] {
+    @apply shadow-md hover:shadow-none bg-secondary text-secondary-foreground border-2 border-border transition-all hover:translate-y-1;
+  }
+
+  .retro-btn[data-variant="destructive"] {
+    @apply shadow-md hover:shadow-none bg-destructive text-destructive-foreground border-2 border-border transition-all hover:translate-y-1;
+  }
+
+  .retro-btn[data-variant="outline"] {
+    @apply shadow-md hover:shadow-none bg-transparent border-2 border-border transition-all hover:translate-y-1;
+  }
+
+  .retro-btn[data-size="icon"] {
+    @apply p-2 w-12 h-12 flex items-center justify-center;
+  }
+
   /* RetroUI Card styles */
   .retro-card {
     @apply border-2 border-border shadow-retro-md bg-card text-card-foreground;

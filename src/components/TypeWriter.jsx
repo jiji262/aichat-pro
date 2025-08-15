@@ -40,11 +40,9 @@ export default function TypeWriter({ text, delay = 15, onComplete = () => {}, st
   // 检查停止状态的函数
   const checkStopStatus = () => {
     if (stopRef && stopRef.current === true) {
-      console.log("TypeWriter检测到停止标志");
-      // 如果停止标志为true，立即显示全部文本并标记为完成
+      setIsComplete(true);
       setDisplayedText(text);
       setIndex(text.length);
-      setIsComplete(true);
       setContainerHeight('auto');
       // 通知父组件打字效果已完成
       onComplete();
@@ -57,7 +55,6 @@ export default function TypeWriter({ text, delay = 15, onComplete = () => {}, st
   useEffect(() => {
     // 如果stopRef存在且为true，立即停止
     if (stopRef && stopRef.current === true && !isComplete) {
-      console.log("停止标志监听器触发");
       checkStopStatus();
     }
   }, [stopRef?.current, isComplete]); // 依赖于stopRef.current的变化
