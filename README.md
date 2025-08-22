@@ -31,20 +31,8 @@
 <div align="center">
 
 ### Chat Interface
-![Chat Interface](screenshots/image-1.png)
+![Chat Interface](screenshots/image-0.png)
 *Clean and intuitive chat interface with multiple AI providers*
-
-### Provider Management
-![Provider Management](screenshots/image-2.png)
-*Easy setup and configuration of AI providers*
-
-### Custom Assistants
-![Custom Assistants](screenshots/image-3.png)
-*Create and manage personalized AI assistants*
-
-### Settings & Themes
-![Settings & Themes](screenshots/image-4.png)
-*Dark/light theme support and language settings*
 
 </div>
 
